@@ -1,0 +1,1054 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Sparks Preschool — Growth Dashboard</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0/dist/chartjs-plugin-datalabels.min.js"></script>
+<style>
+  :root{--ink:#0F172A;--line:#E2E8F0;--bg:#F8FAFC}
+  html,body{background:var(--bg);color:var(--ink);font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+  .pill{cursor:pointer;user-select:none;transition:all .15s ease}
+  .pill:hover{transform:translateY(-1px)}
+  .pill.on{background:#0F172A;color:#fff;border-color:#0F172A}
+  .pill.off{background:#fff;color:#0F172A;border-color:#E2E8F0}
+  .pill-accent.on{background:linear-gradient(135deg,#6366F1,#8B5CF6);color:#fff;border-color:transparent}
+  .card{background:#fff;border:1px solid var(--line);border-radius:14px}
+  .scroll-x{overflow-x:auto;scrollbar-width:thin}
+  .heat-cell{font-variant-numeric:tabular-nums}
+  .tab-btn{padding:.45rem .9rem;border-radius:8px;font-weight:600;font-size:.82rem}
+  details>summary{list-style:none;cursor:pointer}
+  details>summary::-webkit-details-marker{display:none}
+</style>
+</head>
+<body class="min-h-screen pb-12">
+
+<script>
+const CONFIG = {
+  SHEET_ID:   "1F9pE41X-RmLa5MM53NG3QjqMMRn74sdUSiXNDq_Faqg",
+  SHEET_TAB:  "Raw_dashboard",
+  COL: {
+    date:        ["date"],
+    center:      ["center","branch","cabang","outlet","location"],
+    channel:     ["source","channel","lead source","traffic source"],
+    adSpend:     ["ads spending","ad spend","spend","spending","cost"],
+    leads:       ["^leads$","leads"],
+    bookingBD:   ["booking_bd","booking bd","booking by book","book date"],
+    bookingTD:   ["booking_td","booking td","booking by trial","trial date"],
+    showUps:     ["^su$","show ups","show-ups","showups","attended"],
+    newStudents: ["^ns$","new students","newstudents","active enrollment"],
+    leadsT:      ["leads t","leads target","target leads"],
+    bookingT:    ["booking t","bookings target","target booking"],
+    showUpsT:    ["su t","showup target","target su"],
+    newStudentsT:["ns t","ns target","target ns","new student target"],
+    revenue:     ["^revenue$","revenue","total revenue","rev","income","gross revenue","pendapatan"],
+  },
+  BOOKING_BASIS: "BD",
+  CENTERS: ["BTR","BGR","BSD","CKR","KGD","KMG","TBT","BHI","BTY","BTU","CBN","TMP","BDM","STR","GLC","CBG","CBB","CKG","BDG"],
+  CHANNELS: ["Meta","Google","TikTok","Cross-Sell","Referral","Offline","Others"],
+  CHANNEL_ALIASES: {
+    "meta":"Meta","facebook":"Meta","instagram":"Meta","ig":"Meta","fb":"Meta",
+    "google":"Google","google ads":"Google","adwords":"Google","search":"Google",
+    "tiktok":"TikTok","tik tok":"TikTok","tt":"TikTok",
+    "cross sell":"Cross-Sell","cross-sell":"Cross-Sell","crosssell":"Cross-Sell","x-sell":"Cross-Sell",
+    "referral":"Referral","refer":"Referral","mgm":"Referral","word of mouth":"Referral",
+    "offline":"Offline","walk in":"Offline","walk-in":"Offline","event":"Offline","flyer":"Offline",
+  },
+};
+</script>
+
+<header class="px-6 pt-6 pb-3">
+  <div class="flex items-center justify-between flex-wrap gap-3">
+    <div>
+      <h1 class="text-2xl font-bold tracking-tight">Sparks Preschool — Growth Dashboard</h1>
+      <p class="text-sm text-slate-500">Live from Google Sheets · auto-refresh on reload · <span id="last-updated">loading…</span></p>
+    </div>
+    <div class="flex items-center gap-2">
+      <button id="refresh-btn" class="tab-btn bg-white border border-slate-200 hover:bg-slate-50">↻ Refresh</button>
+      <a id="sheet-link" target="_blank" class="tab-btn bg-white border border-slate-200 hover:bg-slate-50">Open Sheet ↗</a>
+    </div>
+  </div>
+</header>
+
+<section class="px-6">
+  <div class="card p-4 space-y-3">
+    <div class="flex items-start gap-3 flex-wrap">
+      <div class="text-xs font-semibold uppercase tracking-wider text-slate-500 pt-2 w-20 shrink-0">Center</div>
+      <div id="center-pills" class="flex flex-wrap gap-1.5"></div>
+    </div>
+    <div class="flex items-start gap-3 flex-wrap">
+      <div class="text-xs font-semibold uppercase tracking-wider text-slate-500 pt-2 w-20 shrink-0">Channel</div>
+      <div id="channel-pills" class="flex flex-wrap gap-1.5"></div>
+    </div>
+    <div class="flex items-center gap-3 flex-wrap">
+      <div class="text-xs font-semibold uppercase tracking-wider text-slate-500 w-20 shrink-0">Period</div>
+      <div id="period-pills" class="flex flex-wrap gap-1.5"></div>
+      <div id="custom-range" class="hidden flex items-center gap-2 ml-2">
+        <input id="date-start" type="date" class="border border-slate-200 rounded-md px-2 py-1 text-sm" />
+        <span class="text-slate-400 text-sm">→</span>
+        <input id="date-end" type="date" class="border border-slate-200 rounded-md px-2 py-1 text-sm" />
+        <button id="custom-apply" class="tab-btn bg-slate-900 text-white">Apply</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="px-6 mt-4">
+  <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-11 gap-3" id="kpi-grid"></div>
+</section>
+
+<section class="px-6 mt-4 grid grid-cols-12 gap-4">
+
+  <!-- Weekly Funnel Trend -->
+  <div class="card p-4 col-span-12">
+    <div class="flex items-center justify-between mb-2">
+      <h3 class="font-semibold">Weekly Funnel Trend</h3>
+      <span class="text-xs text-slate-400">Leads · Bookings · Show-ups · New Students</span>
+    </div>
+    <div class="relative h-80"><canvas id="chart-trend"></canvas></div>
+  </div>
+
+  <!-- Lead → Booking -->
+  <div class="card p-4 col-span-12">
+    <div class="flex items-center justify-between mb-2">
+      <h3 class="font-semibold">Lead → Booking</h3>
+      <span class="text-xs text-slate-400">Volume and Conversion Overlay</span>
+    </div>
+    <div class="relative h-64"><canvas id="chart-l2b"></canvas></div>
+  </div>
+
+  <!-- Booking → Show-up -->
+  <div class="card p-4 col-span-12">
+    <div class="flex items-center justify-between mb-2">
+      <h3 class="font-semibold">Booking → Show-up</h3>
+      <span class="text-xs text-slate-400">Volume and Conversion Overlay</span>
+    </div>
+    <div class="relative h-64"><canvas id="chart-b2s"></canvas></div>
+  </div>
+
+  <!-- Show-up → Paid New Student -->
+  <div class="card p-4 col-span-12">
+    <div class="flex items-center justify-between mb-2">
+      <h3 class="font-semibold">Show-up → Paid New Student</h3>
+      <span class="text-xs text-slate-400">Volume and Conversion Overlay</span>
+    </div>
+    <div class="relative h-64"><canvas id="chart-s2n"></canvas></div>
+  </div>
+
+  <!-- Conversion Rate Trends — dedicated full-width row -->
+  <div class="card p-4 col-span-12">
+    <div class="flex items-center justify-between mb-2">
+      <h3 class="font-semibold">Conversion Rate Trends</h3>
+      <span class="text-xs text-slate-400">Booking % · Show-up % · Paid NS % — weekly</span>
+    </div>
+    <div class="relative h-72"><canvas id="chart-conv-rates"></canvas></div>
+  </div>
+
+  <!-- Acquisition Costs — dedicated full-width row -->
+  <div class="card p-4 col-span-12">
+    <div class="flex items-center justify-between mb-2">
+      <h3 class="font-semibold">Acquisition Costs (CPL, CPB, CAC)</h3>
+      <span class="text-xs text-slate-400">Dual Axis · CPL &amp; CPB on left · CAC on right</span>
+    </div>
+    <div class="relative h-72"><canvas id="chart-costs"></canvas></div>
+  </div>
+
+  <!-- Donut + Center Performance side by side -->
+  <div class="card p-4 col-span-12 lg:col-span-5">
+    <div class="flex items-center justify-between mb-2">
+      <h3 class="font-semibold">Conversion by Channel</h3>
+      <span class="text-xs text-slate-400">New Students share</span>
+    </div>
+    <div class="relative h-72"><canvas id="chart-donut"></canvas></div>
+  </div>
+
+  <div class="card p-4 col-span-12 lg:col-span-7">
+    <div class="flex items-center justify-between mb-2">
+      <h3 class="font-semibold">Center Performance</h3>
+      <span class="text-xs text-slate-400">New Students by channel</span>
+    </div>
+    <div class="relative h-96"><canvas id="chart-center"></canvas></div>
+  </div>
+
+  <!-- Revenue Trend — weekly line + NS overlay -->
+  <div class="card p-4 col-span-12">
+    <div class="flex items-center justify-between mb-2">
+      <h3 class="font-semibold">Revenue vs New Students — Weekly</h3>
+      <span class="text-xs text-slate-400">Revenue (bars) · AOV trend line · NS volume</span>
+    </div>
+    <div class="relative h-80"><canvas id="chart-revenue-trend"></canvas></div>
+  </div>
+
+  <!-- Revenue by Center (stacked bar) + Revenue by Channel (donut) -->
+  <div class="card p-4 col-span-12 lg:col-span-7">
+    <div class="flex items-center justify-between mb-2">
+      <h3 class="font-semibold">Revenue by Center</h3>
+      <span class="text-xs text-slate-400">Stacked by channel contribution</span>
+    </div>
+    <div class="relative h-96"><canvas id="chart-rev-center"></canvas></div>
+  </div>
+  <div class="card p-4 col-span-12 lg:col-span-5">
+    <div class="flex items-center justify-between mb-2">
+      <h3 class="font-semibold">Revenue by Channel</h3>
+      <span class="text-xs text-slate-400">Share of total revenue</span>
+    </div>
+    <div class="relative h-96"><canvas id="chart-rev-channel"></canvas></div>
+  </div>
+
+  <!-- AOV vs NS per Center — bubble/scatter -->
+  <div class="card p-4 col-span-12">
+    <div class="flex items-center justify-between mb-2">
+      <h3 class="font-semibold">AOV vs New Students — by Center</h3>
+      <span class="text-xs text-slate-400">Bubble size = total revenue · X = NS count · Y = AOV (Rev ÷ NS)</span>
+    </div>
+    <div class="relative h-96"><canvas id="chart-aov-ns"></canvas></div>
+  </div>
+
+  <!-- Heatmap -->
+  <div class="card p-4 col-span-12 overflow-hidden">
+    <div class="flex items-center justify-between mb-2">
+      <h3 class="font-semibold">Conversion Heatmap — Center × Channel</h3>
+      <span class="text-xs text-slate-400">Lead → New Student %</span>
+    </div>
+    <div class="scroll-x">
+      <table id="heatmap" class="w-full text-xs heat-cell"></table>
+    </div>
+  </div>
+</section>
+
+<section class="px-6 mt-6">
+  <details class="card p-4">
+    <summary class="font-semibold text-sm flex items-center justify-between">
+      <span>🔧 Data diagnostics &amp; column mapping</span>
+      <span class="text-xs text-slate-400">click to expand</span>
+    </summary>
+    <div id="diag" class="mt-3 text-xs text-slate-600 space-y-2"></div>
+  </details>
+</section>
+
+<script>
+Chart.register(ChartDataLabels);
+
+const $ = id => document.getElementById(id);
+const fmt = n => n==null||isNaN(n) ? "–" : Math.round(n).toLocaleString();
+const fmtPct = n => n==null||isNaN(n) ? "–" : Math.round(n*100)+"%";
+const fmtMoney = n => n==null||isNaN(n) ? "–" : "$"+Math.round(n).toLocaleString();
+
+const palette = {Meta:"#1877F2",Google:"#EA4335",TikTok:"#000000","Cross-Sell":"#8B5CF6",Referral:"#10B981",Offline:"#F59E0B",Others:"#94A3B8"};
+
+function parseDate(v){
+  if(v==null||v==="") return null;
+  if(v instanceof Date) return isNaN(v)?null:v;
+  if(typeof v === "string"){
+    const m = v.match(/^Date\((\d+),(\d+),(\d+)(?:,(\d+),(\d+),(\d+))?\)$/);
+    if(m) return new Date(+m[1], +m[2], +m[3], +(m[4]||0), +(m[5]||0), +(m[6]||0));
+    const d = new Date(v);
+    if(!isNaN(d)) return d;
+    const m2 = v.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/);
+    if(m2){ let [_,d1,m1,y]=m2; y=+y; if(y<100) y+=2000; return new Date(y,+m1-1,+d1); }
+  }
+  if(typeof v === "number") return new Date(Math.round((v-25569)*86400*1000));
+  return null;
+}
+function startOfWeek(d){ const x=new Date(d); const day=x.getDay()||7; x.setHours(0,0,0,0); x.setDate(x.getDate()-day+1); return x; }
+function fmtWeek(d){ return startOfWeek(d).toISOString().slice(0,10); }
+
+function fmtWkLabel(iso){
+  const d = new Date(iso);
+  const target = new Date(d.valueOf());
+  const dayNr = (d.getDay() + 6) % 7;
+  target.setDate(target.getDate() - dayNr + 3);
+  const firstThursday = target.valueOf();
+  target.setMonth(0, 1);
+  if (target.getDay() !== 4) target.setMonth(0, 1 + ((4 - target.getDay()) + 7) % 7);
+  return "W" + (1 + Math.ceil((firstThursday - target) / 604800000));
+}
+
+function daysAgo(n){ const x=new Date(); x.setHours(0,0,0,0); x.setDate(x.getDate()-n); return x; }
+function cleanCenter(raw){ if(!raw) return null; return String(raw).split(/[\/,]/)[0].trim().toUpperCase() || null; }
+function canonChannel(raw){
+  if(!raw) return "Others";
+  const key = String(raw).trim().toLowerCase();
+  if(CONFIG.CHANNEL_ALIASES[key]) return CONFIG.CHANNEL_ALIASES[key];
+  const found = CONFIG.CHANNELS.find(c => c.toLowerCase()===key);
+  return found || "Others";
+}
+
+const STATE = {
+  rows: [], cols: {}, headers: [],
+  filters: { centers:new Set(CONFIG.CENTERS), channels:new Set(CONFIG.CHANNELS), period:"ALL", customStart:null, customEnd:null },
+  dateRange: {min:null, max:null},
+  charts: {}, diag: [],
+};
+
+function gvizUrl(tab){ return `https://docs.google.com/spreadsheets/d/${CONFIG.SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(tab)}`; }
+async function fetchSheet(tab){
+  const url = gvizUrl(tab);
+  let res;
+  try { res = await fetch(url); }
+  catch(e){ throw new Error("Network/CORS error: "+e.message); }
+  if(!res.ok) throw new Error("HTTP "+res.status+" "+res.statusText);
+  const txt = await res.text();
+  const m = txt.match(/setResponse\(([\s\S]*)\)\s*;?\s*$/);
+  if(!m) throw new Error("Non-JSON response");
+  const json = JSON.parse(m[1]);
+  if(json.status!=="ok") throw new Error("gviz: "+JSON.stringify(json.errors||json));
+  return json.table;
+}
+
+function makeDemoTable(){
+  const rng = (seed)=>{ let s=seed; return ()=>{ s=(s*9301+49297)%233280; return s/233280; }; };
+  const r = rng(42);
+  const centers = CONFIG.CENTERS, channels = ["Meta","Google","TikTok","Cross-Sell","Referral","Offline"];
+  const mix = {Meta:0.65,Google:0.07,TikTok:0.02,"Cross-Sell":0.13,Referral:0.10,Offline:0.03};
+  const today = new Date(); today.setHours(0,0,0,0);
+  const cols = [{label:"Date"},{label:"Center"},{label:"Source"},{label:"Ads Spending"},{label:"Leads"},{label:"Booking_BD"},{label:"Booking_TD"},{label:"SU"},{label:"NS"},{label:"Leads T"},{label:"Booking T"},{label:"SU T"},{label:"NS T"},{label:"Revenue"}];
+  const rows = [];
+  for(let off=120; off>=0; off--){
+    const d = new Date(today); d.setDate(d.getDate()-off);
+    for(const center of centers){
+      for(const ch of channels){
+        const m = mix[ch]; const day = 0.85 + r()*0.4; const cf = 0.6 + (centers.indexOf(center)/centers.length)*0.8;
+        const leads = Math.round(30 * m * day * cf); if(leads<1 && r()>0.3) continue;
+        const bd = Math.round(leads * (0.28 + r()*0.08)), td = Math.round(bd * (0.92 + r()*0.15));
+        const su = Math.round(td * (0.40 + r()*0.10)), ns = Math.round(su * (0.16 + r()*0.08));
+        const sp = (ch==="Meta"||ch==="Google"||ch==="TikTok") ? Math.round(leads*(35+r()*30)) : 0;
+        const aov = 2200000 + (centers.indexOf(center)/centers.length)*600000 + (r()-0.5)*300000;
+        const rev = Math.round(ns * aov);
+        rows.push({c:[
+          {v:"Date("+d.getFullYear()+","+d.getMonth()+","+d.getDate()+")"},
+          {v:center},{v:ch},{v:sp},{v:leads},{v:bd},{v:td},{v:su},{v:ns},
+          {v:Math.round(leads*1.1)},{v:Math.round(bd*1.1)},{v:Math.round(su*1.1)},{v:Math.round(ns*1.1)},{v:rev},
+        ]});
+      }
+    }
+  }
+  return {cols, rows};
+}
+
+function resolveColumns(headers){
+  const lower = headers.map(h=>String(h||"").toLowerCase().trim());
+  const find = aliases => {
+    for(const a of aliases){ if(a.startsWith("^")){ const i = lower.findIndex(h => new RegExp(a,"i").test(h)); if(i>=0) return i; } }
+    for(const a of aliases){ if(!a.startsWith("^")){ const i = lower.findIndex(h => h.includes(a)); if(i>=0) return i; } }
+    return -1;
+  };
+  const out = {};
+  for(const k of Object.keys(CONFIG.COL)) out[k] = find(CONFIG.COL[k]);
+  return out;
+}
+
+function parseRows(table){
+  const headers = table.cols.map(c => (c.label && c.label.trim()) || c.id || "");
+  const cols = resolveColumns(headers);
+  STATE.headers = headers; STATE.cols = cols;
+  const num = v => { if(v==null||v==="") return 0; const n = typeof v==="number" ? v : Number(String(v).replace(/[,\s$]/g,"")); return isNaN(n) ? 0 : n; };
+  let dmin=null, dmax=null;
+  const rows = table.rows.map(r => {
+    const get = i => i<0 ? null : (r.c[i] ? (r.c[i].v ?? null) : null);
+    const d = parseDate(get(cols.date));
+    if(d){ if(!dmin||d<dmin) dmin=d; if(!dmax||d>dmax) dmax=d; }
+    return {
+      date:d, center:cleanCenter(get(cols.center)), channel:canonChannel(get(cols.channel)),
+      adSpend:num(get(cols.adSpend)), leads:num(get(cols.leads)), bookingBD:num(get(cols.bookingBD)), bookingTD:num(get(cols.bookingTD)),
+      showUps:num(get(cols.showUps)), newStudents:num(get(cols.newStudents)),
+      revenue:num(get(cols.revenue)),
+      leadsT:num(get(cols.leadsT)), bookingT:num(get(cols.bookingT)), showUpsT:num(get(cols.showUpsT)), newStudentsT:num(get(cols.newStudentsT)),
+    };
+  }).filter(r => r.date);
+  STATE.dateRange = {min:dmin, max:dmax};
+  return rows;
+}
+
+function periodRange(){
+  const f = STATE.filters;
+  if(f.period==="CUSTOM" && f.customStart && f.customEnd) return [f.customStart, f.customEnd];
+  const end = new Date(); end.setHours(23,59,59,999);
+  if(f.period==="L4W") return [daysAgo(28), end];
+  if(f.period==="L1M") return [daysAgo(30), end];
+  if(f.period==="L2M") return [daysAgo(60), end];
+  if(f.period==="L3M") return [daysAgo(90), end];
+  return [new Date(2000,0,1), end];
+}
+function inFilter(row){
+  const [s,e] = periodRange();
+  if(!row.date || row.date<s || row.date>e) return false;
+  if(row.center && !STATE.filters.centers.has(row.center)) return false;
+  if(!STATE.filters.channels.has(row.channel)) return false;
+  return true;
+}
+function bookingsOf(r){ return CONFIG.BOOKING_BASIS==="TD" ? r.bookingTD : r.bookingBD; }
+
+function aggregate(){
+  let leads=0,bookings=0,showUps=0,newStudents=0,adSpend=0,revenue=0,leadsT=0,bookingT=0,showUpsT=0,newStudentsT=0;
+  for(const r of STATE.rows){
+    if(!inFilter(r)) continue;
+    leads+=r.leads; bookings+=bookingsOf(r); showUps+=r.showUps; newStudents+=r.newStudents; adSpend+=r.adSpend; revenue+=r.revenue;
+    leadsT+=r.leadsT; bookingT+=r.bookingT; showUpsT+=r.showUpsT; newStudentsT+=r.newStudentsT;
+  }
+  const l2b=leads>0?bookings/leads:null, b2s=bookings>0?showUps/bookings:null;
+  const s2n=showUps>0?newStudents/showUps:null, l2n=leads>0?newStudents/leads:null;
+  const cpl=leads>0?adSpend/leads:null, cpb=bookings>0?adSpend/bookings:null, cac=newStudents>0?adSpend/newStudents:null;
+  const aov=newStudents>0?revenue/newStudents:null;
+  return {leads,bookings,showUps,newStudents,adSpend,revenue,aov,leadsT,bookingT,showUpsT,newStudentsT,l2b,b2s,s2n,l2n,cpl,cpb,cac};
+}
+
+function weeklySeries(){
+  const buckets = new Map();
+  for(const r of STATE.rows){
+    if(!inFilter(r)) continue;
+    const wk = fmtWeek(r.date);
+    if(!buckets.has(wk)) buckets.set(wk,{wk,leads:0,bookings:0,showUps:0,newStudents:0,adSpend:0,revenue:0});
+    const b = buckets.get(wk);
+    b.leads+=r.leads; b.bookings+=bookingsOf(r); b.showUps+=r.showUps; b.newStudents+=r.newStudents; b.adSpend+=r.adSpend; b.revenue+=r.revenue;
+  }
+  return [...buckets.values()].sort((a,b)=>a.wk.localeCompare(b.wk));
+}
+
+function byChannelNewStudents(){
+  const out = Object.fromEntries(CONFIG.CHANNELS.map(c=>[c,0]));
+  for(const r of STATE.rows){ if(!inFilter(r)) continue; out[r.channel] = (out[r.channel]||0) + r.newStudents; }
+  return out;
+}
+function byCenterByChannel(){
+  const grid = {};
+  for(const c of CONFIG.CENTERS) grid[c] = Object.fromEntries(CONFIG.CHANNELS.map(ch=>[ch,{leads:0,ns:0}]));
+  for(const r of STATE.rows){
+    if(!r.center || !grid[r.center]) continue;
+    if(!inFilter(r)) continue;
+    grid[r.center][r.channel].leads += r.leads;
+    grid[r.center][r.channel].ns += r.newStudents;
+  }
+  return grid;
+}
+
+function byCenterRevenue(){
+  const out = {};
+  for(const c of CONFIG.CENTERS) out[c] = {ns:0, revenue:0};
+  for(const r of STATE.rows){
+    if(!r.center || !out[r.center]) continue;
+    if(!inFilter(r)) continue;
+    out[r.center].ns += r.newStudents;
+    out[r.center].revenue += r.revenue;
+  }
+  return out;
+}
+
+function byChannelRevenue(){
+  const out = Object.fromEntries(CONFIG.CHANNELS.map(c=>[c,0]));
+  for(const r of STATE.rows){ if(!inFilter(r)) continue; out[r.channel] = (out[r.channel]||0) + r.revenue; }
+  return out;
+}
+
+function renderPills(){
+  const ctr = $("center-pills"); ctr.innerHTML="";
+  const allCenter = STATE.filters.centers.size===CONFIG.CENTERS.length;
+  ctr.appendChild(makePill("All", allCenter, true, ()=>{
+    if(allCenter) STATE.filters.centers.clear(); else CONFIG.CENTERS.forEach(c=>STATE.filters.centers.add(c)); refresh();
+  }));
+  for(const c of CONFIG.CENTERS){
+    ctr.appendChild(makePill(c, STATE.filters.centers.has(c), false, ()=>{
+      STATE.filters.centers.has(c) ? STATE.filters.centers.delete(c) : STATE.filters.centers.add(c); refresh();
+    }));
+  }
+  const ch = $("channel-pills"); ch.innerHTML="";
+  const allCh = STATE.filters.channels.size===CONFIG.CHANNELS.length;
+  ch.appendChild(makePill("All", allCh, true, ()=>{
+    if(allCh) STATE.filters.channels.clear(); else CONFIG.CHANNELS.forEach(c=>STATE.filters.channels.add(c)); refresh();
+  }));
+  for(const c of CONFIG.CHANNELS){
+    ch.appendChild(makePill(c, STATE.filters.channels.has(c), false, ()=>{
+      STATE.filters.channels.has(c) ? STATE.filters.channels.delete(c) : STATE.filters.channels.add(c); refresh();
+    }, palette[c]));
+  }
+  const pp = $("period-pills"); pp.innerHTML="";
+  for(const opt of [["L4W","L4W"],["L1M","L1M"],["L2M","L2M"],["L3M","L3M"],["All","ALL"],["Custom","CUSTOM"]]){
+    const [label,val] = opt;
+    pp.appendChild(makePill(label, STATE.filters.period===val, true, ()=>{
+      STATE.filters.period = val; $("custom-range").classList.toggle("hidden", val!=="CUSTOM"); if(val!=="CUSTOM") refresh();
+    }));
+  }
+}
+function makePill(label, on, accent, onclick, dotColor){
+  const b = document.createElement("button");
+  b.className = `pill ${accent?"pill-accent":""} ${on?"on":"off"} border text-xs font-medium px-3 py-1.5 rounded-full inline-flex items-center gap-1.5`;
+  if(dotColor){
+    const dot = document.createElement("span");
+    dot.style.cssText = `width:8px;height:8px;border-radius:99px;background:${dotColor};display:inline-block`;
+    b.appendChild(dot);
+  }
+  b.appendChild(document.createTextNode(label)); b.onclick = onclick; return b;
+}
+
+function renderKPIs(agg){
+  const fmtRev = n => n==null||isNaN(n)||n===0 ? "–" : n>=1e9 ? "Rp"+Math.round(n/1e9)+"B" : n>=1e6 ? "Rp"+Math.round(n/1e6)+"M" : "Rp"+Math.round(n).toLocaleString();
+  const cards = [
+    {label:"Total Leads", val:fmt(agg.leads), sub:"inquiries this period"},
+    {label:"Bookings ("+CONFIG.BOOKING_BASIS+")", val:fmt(agg.bookings), sub:fmtPct(agg.l2b)+" of leads"},
+    {label:"Show-ups",    val:fmt(agg.showUps), sub:fmtPct(agg.b2s)+" of bookings"},
+    {label:"New Students",val:fmt(agg.newStudents), sub:fmtPct(agg.s2n)+" of show-ups"},
+    {label:"L→NS Conv.",  val:fmtPct(agg.l2n), sub:"end-to-end"},
+    {label:"Revenue",     val:fmtRev(agg.revenue), sub:"period total"},
+    {label:"AOV",         val:fmtRev(agg.aov), sub:"rev / new student"},
+    {label:"Ad Spend",    val:fmtMoney(agg.adSpend), sub:"period total"},
+    {label:"CPL",         val:agg.cpl?fmtMoney(agg.cpl):"–", sub:"cost / lead"},
+    {label:"CPB",         val:agg.cpb?fmtMoney(agg.cpb):"–", sub:"cost / booking"},
+    {label:"CAC",         val:agg.cac?fmtMoney(agg.cac):"–", sub:"cost / new student"},
+  ];
+  $("kpi-grid").innerHTML = cards.map(c=>`
+    <div class="card p-3">
+      <div class="text-[11px] uppercase tracking-wider text-slate-500 font-semibold">${c.label}</div>
+      <div class="text-xl font-bold mt-0.5">${c.val}</div>
+      <div class="text-[11px] text-slate-500 mt-0.5">${c.sub}</div>
+    </div>
+  `).join("");
+}
+
+function chart(id, cfg){
+  if(STATE.charts[id]) STATE.charts[id].destroy();
+  STATE.charts[id] = new Chart($(id).getContext("2d"), cfg);
+}
+
+function renderTrend(){
+  const series = weeklySeries(); const labels = series.map(s=>fmtWkLabel(s.wk));
+  const labelConfig = (color) => ({
+    align: 'top', color: color, font: { size: 9, weight: 'bold' },
+    formatter: v => Math.round(v) > 0 ? Math.round(v).toLocaleString() : ''
+  });
+  chart("chart-trend",{
+    type:"line", data:{ labels, datasets:[
+      {label:"Leads",data:series.map(s=>s.leads),borderColor:"#6366F1",backgroundColor:"rgba(99,102,241,.15)",fill:true,tension:.35, datalabels: labelConfig("#6366F1")},
+      {label:"Bookings",data:series.map(s=>s.bookings),borderColor:"#06B6D4",backgroundColor:"rgba(6,182,212,.15)",fill:true,tension:.35, datalabels: labelConfig("#06B6D4")},
+      {label:"Show-ups",data:series.map(s=>s.showUps),borderColor:"#10B981",backgroundColor:"rgba(16,185,129,.15)",fill:true,tension:.35, datalabels: labelConfig("#10B981")},
+      {label:"New Students",data:series.map(s=>s.newStudents),borderColor:"#F59E0B",backgroundColor:"rgba(245,158,11,.2)",fill:true,tension:.35, datalabels: labelConfig("#F59E0B")},
+    ]},
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{position:"bottom",labels:{boxWidth:10,font:{size:11}}}}, scales:{y:{beginAtZero:true,grid:{color:"#F1F5F9"}},x:{grid:{display:false}}} }
+  });
+}
+
+function renderFunnelChart(id, top, bottom, topLabel, bottomLabel, color){
+  const series = weeklySeries(); const labels = series.map(s=>fmtWkLabel(s.wk));
+  const conv = series.map(s=> s[top]>0 ? s[bottom]/s[top]*100 : 0);
+  chart(id,{
+    type:"bar", data:{ labels, datasets:[
+      { type:"bar",label:topLabel,data:series.map(s=>s[top]),backgroundColor:color+"55",borderRadius:3,yAxisID:"y",
+        datalabels: { align: 'end', anchor: 'end', color: '#64748B', font: {size: 9}, formatter: v => Math.round(v) > 0 ? Math.round(v).toLocaleString() : '' } },
+      { type:"bar",label:bottomLabel,data:series.map(s=>s[bottom]),backgroundColor:color,borderRadius:3,yAxisID:"y",
+        datalabels: { align: 'center', color: '#ffffff', font: {size: 10, weight: 'bold'}, formatter: v => Math.round(v) > 0 ? Math.round(v).toLocaleString() : '' } },
+      { type:"line",label:"Conv %",data:conv,borderColor:"#0F172A",backgroundColor:"#0F172A",tension:.3,yAxisID:"y1",pointRadius:2,
+        datalabels: { align: 'top', color: '#0F172A', font: {size: 10, weight: 'bold'}, formatter: v => v > 0 ? Math.round(v) + '%' : '' } },
+    ]},
+    options:{
+      responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}},
+      scales:{
+        y:{grid:{color:"#F1F5F9"},ticks:{font:{size:10}}},
+        y1:{position:"right",grid:{display:false},ticks:{callback:v=>Math.round(v)+"%",font:{size:10}}},
+        x:{grid:{display:false},ticks:{font:{size:10}}}
+      }
+    }
+  });
+}
+
+// Conversion Rate Trends — Booking %, Show-up %, Paid NS % as weekly line chart
+function renderConvRates(){
+  const series = weeklySeries();
+  const labels = series.map(s => fmtWkLabel(s.wk));
+  const l2bPct = series.map(s => s.leads    > 0 ? Math.round(s.bookings    / s.leads    * 100) : 0);
+  const b2sPct = series.map(s => s.bookings > 0 ? Math.round(s.showUps     / s.bookings * 100) : 0);
+  const s2nPct = series.map(s => s.showUps  > 0 ? Math.round(s.newStudents / s.showUps  * 100) : 0);
+
+  const labelCfg = (color) => ({
+    align: 'top', color: color, font: { size: 9, weight: 'bold' },
+    formatter: v => v > 0 ? v + '%' : ''
+  });
+
+  chart("chart-conv-rates", {
+    type: "line",
+    data: {
+      labels,
+      datasets: [
+        {
+          label: "Booking Rate (Lead→Book)",
+          data: l2bPct,
+          borderColor: "#06B6D4",
+          backgroundColor: "rgba(6,182,212,.10)",
+          fill: true, tension: .35, pointRadius: 3, borderWidth: 2,
+          datalabels: labelCfg("#0891B2")
+        },
+        {
+          label: "Show-up Rate (Book→SU)",
+          data: b2sPct,
+          borderColor: "#10B981",
+          backgroundColor: "rgba(16,185,129,.10)",
+          fill: true, tension: .35, pointRadius: 3, borderWidth: 2,
+          datalabels: labelCfg("#059669")
+        },
+        {
+          label: "Paid NS Rate (SU→NS)",
+          data: s2nPct,
+          borderColor: "#F59E0B",
+          backgroundColor: "rgba(245,158,11,.10)",
+          fill: true, tension: .35, pointRadius: 3, borderWidth: 2,
+          datalabels: labelCfg("#D97706")
+        },
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { position: "bottom", labels: { boxWidth: 10, font: { size: 11 } } },
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          grid: { color: "#F1F5F9" },
+          ticks: { callback: v => v + "%", font: { size: 10 } },
+          title: { display: true, text: "Conversion %", font: { size: 11 }, color: "#94A3B8" }
+        },
+        x: { grid: { display: false }, ticks: { font: { size: 10 } } }
+      }
+    }
+  });
+}
+
+function renderCostChart(){
+  const series = weeklySeries();
+  const labels = series.map(s=>fmtWkLabel(s.wk));
+  const cplData = series.map(s => s.leads > 0 ? s.adSpend / s.leads : 0);
+  const cpbData = series.map(s => s.bookings > 0 ? s.adSpend / s.bookings : 0);
+  const cacData = series.map(s => s.newStudents > 0 ? s.adSpend / s.newStudents : 0);
+
+  const labelConfig = (color) => ({
+    align: 'top', color: color, font: { size: 9, weight: 'bold' },
+    formatter: v => v > 0 ? "$" + Math.round(v).toLocaleString() : ''
+  });
+
+  chart("chart-costs", {
+    type: "line",
+    data: {
+      labels,
+      datasets: [
+        {label:"CPL", data:cplData, borderColor:"#10B981", backgroundColor:"rgba(16,185,129,.10)", fill:true, tension:.3, pointRadius:3, borderWidth:2, yAxisID:"y",  datalabels:labelConfig("#059669")},
+        {label:"CPB", data:cpbData, borderColor:"#F59E0B", backgroundColor:"rgba(245,158,11,.10)", fill:true, tension:.3, pointRadius:3, borderWidth:2, yAxisID:"y",  datalabels:labelConfig("#D97706")},
+        {label:"CAC", data:cacData, borderColor:"#EF4444", backgroundColor:"rgba(239,68,68,.10)",  fill:true, tension:.3, pointRadius:3, borderWidth:2, yAxisID:"y1", datalabels:labelConfig("#DC2626")},
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: "bottom", labels: { boxWidth: 10, font: { size: 11 } } } },
+      scales: {
+        y: {
+          type: 'linear', display: true, position: 'left',
+          grid: { color: "#F1F5F9" },
+          ticks: { callback: v => "$" + Math.round(v).toLocaleString(), font: {size: 10} },
+          title: { display: true, text: "CPL / CPB", font: { size: 11 }, color: "#94A3B8" }
+        },
+        y1: {
+          type: 'linear', display: true, position: 'right',
+          grid: { display: false },
+          ticks: { callback: v => "$" + Math.round(v).toLocaleString(), font: {size: 10} },
+          title: { display: true, text: "CAC", font: { size: 11 }, color: "#94A3B8" }
+        },
+        x: { grid: { display: false }, ticks: {font: {size: 10}} }
+      }
+    }
+  });
+}
+
+function renderDonut(){
+  const data = byChannelNewStudents(); const labels = Object.keys(data);
+  chart("chart-donut",{
+    type:"doughnut", data:{ labels, datasets:[{ data:labels.map(l=>data[l]), backgroundColor:labels.map(l=>palette[l]||"#94A3B8"), borderWidth:2, borderColor:"#fff" }] },
+    options:{
+      responsive:true, maintainAspectRatio:false, cutout:"60%",
+      plugins:{
+        legend:{position:"bottom",labels:{boxWidth:10,font:{size:11}}},
+        datalabels: { color: '#ffffff', font: { weight: 'bold', size: 11 }, formatter: (v, ctx) => { if (v === 0) return ''; return Math.round(v * 100 / ctx.chart._metasets[ctx.datasetIndex].total) + "%"; } }
+      }
+    }
+  });
+}
+
+function renderCenterPerf(){
+  const grid = byCenterByChannel(); const centers = CONFIG.CENTERS.filter(c => Object.values(grid[c]).some(v=>v.ns>0||v.leads>0));
+  const datasets = CONFIG.CHANNELS.map(ch => ({
+    label:ch, backgroundColor:palette[ch]||"#94A3B8", data:centers.map(c => grid[c][ch].ns), stack:"a",
+    datalabels: { color: '#ffffff', font: { size: 9, weight: 'bold' }, formatter: v => Math.round(v) > 0 ? Math.round(v).toLocaleString() : '' }
+  }));
+  chart("chart-center",{
+    type:"bar", data:{labels:centers,datasets},
+    options:{
+      indexAxis:"y", responsive:true, maintainAspectRatio:false, plugins:{legend:{position:"bottom",labels:{boxWidth:10,font:{size:10}}}},
+      scales:{ x:{stacked:true,grid:{color:"#F1F5F9"},ticks:{font:{size:10}}}, y:{stacked:true,grid:{display:false},ticks:{font:{size:10}}} }
+    }
+  });
+}
+
+function renderHeatmap(){
+  const grid = byCenterByChannel(); const centers = CONFIG.CENTERS, channels = CONFIG.CHANNELS; let maxConv = 0; const cells = {};
+  for(const c of centers){
+    cells[c] = {};
+    for(const ch of channels){ const {leads,ns} = grid[c][ch]; const conv = leads>0 ? ns/leads : 0; cells[c][ch] = {leads,ns,conv}; if(conv>maxConv) maxConv = conv; }
+  }
+  const colorFor = v => {
+    if(maxConv===0) return "#F1F5F9"; const t = Math.min(1, v/maxConv);
+    return `rgb(${Math.round(254-t*(254-187))},${Math.round(252-t*(252-247))},${Math.round(232-t*(232-208))})`;
+  };
+  const head = `<thead><tr><th class="sticky left-0 bg-white text-left p-2 font-semibold">Center</th>`+channels.map(c=>`<th class="p-2 text-center font-semibold" style="color:${palette[c]}">${c}</th>`).join("")+`</tr></thead>`;
+  const body = `<tbody>`+centers.map(c=>{
+    const tds = channels.map(ch=>{
+      const {leads,ns,conv} = cells[c][ch]; const bg = colorFor(conv); const label = leads>0 ? Math.round(conv*100)+"%" : "–";
+      return `<td class="p-2 text-center" style="background:${bg}" title="${c} × ${ch}: ${ns} NS / ${leads} leads">${label}</td>`;
+    }).join("");
+    return `<tr><td class="sticky left-0 bg-white p-2 font-semibold">${c}</td>${tds}</tr>`;
+  }).join("")+`</tbody>`;
+  $("heatmap").innerHTML = head + body;
+}
+
+// Revenue Trend: grouped bars (Revenue) + line (AOV) + line (NS count on right axis)
+function renderRevenueTrend(){
+  const series = weeklySeries();
+  const labels = series.map(s => fmtWkLabel(s.wk));
+  const fmtRevShort = v => v >= 1e9 ? "Rp"+(v/1e9).toFixed(1)+"B" : v >= 1e6 ? "Rp"+Math.round(v/1e6)+"M" : v > 0 ? "Rp"+Math.round(v/1e3)+"K" : "";
+  chart("chart-revenue-trend", {
+    type: "bar",
+    data: {
+      labels,
+      datasets: [
+        {
+          type: "bar", label: "Revenue", data: series.map(s => s.revenue),
+          backgroundColor: "rgba(99,102,241,.75)", borderRadius: 4, yAxisID: "y",
+          datalabels: { anchor: "end", align: "end", color: "#6366F1", font: {size:9,weight:"bold"}, formatter: v => fmtRevShort(v) }
+        },
+        {
+          type: "line", label: "AOV (Rev÷NS)", data: series.map(s => s.newStudents > 0 ? Math.round(s.revenue / s.newStudents) : 0),
+          borderColor: "#F59E0B", backgroundColor: "#F59E0B", tension: .35, yAxisID: "y2",
+          pointRadius: 3, borderWidth: 2,
+          datalabels: { align: "top", color: "#D97706", font: {size:9,weight:"bold"}, formatter: v => v > 0 ? fmtRevShort(v) : "" }
+        },
+        {
+          type: "line", label: "New Students", data: series.map(s => s.newStudents),
+          borderColor: "#10B981", backgroundColor: "#10B981", tension: .35, yAxisID: "y1",
+          pointRadius: 3, borderWidth: 2, borderDash: [4,3],
+          datalabels: { align: "bottom", color: "#059669", font: {size:9,weight:"bold"}, formatter: v => v > 0 ? Math.round(v) : "" }
+        },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: "bottom", labels: { boxWidth: 10, font: { size: 11 } } } },
+      scales: {
+        y:  { position: "left",  grid: { color: "#F1F5F9" }, ticks: { callback: v => fmtRevShort(v), font:{size:10} }, title:{display:true,text:"Revenue",font:{size:11},color:"#94A3B8"} },
+        y1: { position: "right", grid: { display: false },    ticks: { font:{size:10} }, title:{display:true,text:"NS count",font:{size:11},color:"#94A3B8"} },
+        y2: { position: "right", grid: { display: false },    ticks: { callback: v => fmtRevShort(v), font:{size:10} }, title:{display:true,text:"AOV",font:{size:11},color:"#94A3B8"} },
+        x:  { grid: { display: false }, ticks: { font:{size:10} } }
+      }
+    }
+  });
+}
+
+// Revenue by Center — horizontal stacked bar, coloured by channel
+function renderRevByCenter(){
+  const revGrid = {};
+  for(const c of CONFIG.CENTERS) revGrid[c] = Object.fromEntries(CONFIG.CHANNELS.map(ch=>[ch,0]));
+  for(const r of STATE.rows){
+    if(!r.center || !revGrid[r.center] || !inFilter(r)) continue;
+    revGrid[r.center][r.channel] += r.revenue;
+  }
+  const fmtRevShort = v => v >= 1e9 ? "Rp"+(v/1e9).toFixed(1)+"B" : v >= 1e6 ? "Rp"+Math.round(v/1e6)+"M" : v > 0 ? "Rp"+Math.round(v/1e3)+"K" : "";
+  const centers = CONFIG.CENTERS.filter(c => Object.values(revGrid[c]).some(v=>v>0));
+  const datasets = CONFIG.CHANNELS.map(ch => ({
+    label: ch, backgroundColor: palette[ch]||"#94A3B8", stack: "a",
+    data: centers.map(c => revGrid[c][ch]),
+    datalabels: { color:"#fff", font:{size:9,weight:"bold"}, formatter: v => v > 0 ? fmtRevShort(v) : "" }
+  }));
+  chart("chart-rev-center", {
+    type: "bar", data: { labels: centers, datasets },
+    options: {
+      indexAxis: "y", responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position:"bottom", labels:{boxWidth:10,font:{size:10}} } },
+      scales: {
+        x: { stacked:true, grid:{color:"#F1F5F9"}, ticks:{callback: v => fmtRevShort(v), font:{size:10}} },
+        y: { stacked:true, grid:{display:false}, ticks:{font:{size:10}} }
+      }
+    }
+  });
+}
+
+// Revenue by Channel — doughnut
+function renderRevByChannel(){
+  const data = byChannelRevenue(); const labels = Object.keys(data);
+  const fmtRevShort = v => v >= 1e9 ? "Rp"+(v/1e9).toFixed(1)+"B" : v >= 1e6 ? "Rp"+Math.round(v/1e6)+"M" : v > 0 ? "Rp"+Math.round(v/1e3)+"K" : "";
+  const total = labels.reduce((s,l)=>s+(data[l]||0), 0);
+  chart("chart-rev-channel", {
+    type: "doughnut",
+    data: { labels, datasets:[{ data:labels.map(l=>data[l]), backgroundColor:labels.map(l=>palette[l]||"#94A3B8"), borderWidth:2, borderColor:"#fff" }] },
+    options: {
+      responsive:true, maintainAspectRatio:false, cutout:"58%",
+      plugins:{
+        legend:{position:"bottom",labels:{boxWidth:10,font:{size:11}}},
+        datalabels:{
+          color:"#fff", font:{weight:"bold",size:11},
+          formatter:(v,ctx) => {
+            if(v===0) return "";
+            const pct = Math.round(v*100/ctx.chart._metasets[ctx.datasetIndex].total);
+            return pct > 4 ? pct+"%" : "";
+          }
+        }
+      }
+    }
+  });
+}
+
+// AOV vs NS — custom canvas bubble chart, styled like the reference Highcharts example
+function renderAovNs(){
+  const canvasEl = $("chart-aov-ns");
+  if(!canvasEl) return;
+
+  // Destroy any previous Chart.js instance on this canvas
+  if(STATE.charts["chart-aov-ns"]){ STATE.charts["chart-aov-ns"].destroy(); delete STATE.charts["chart-aov-ns"]; }
+
+  const cData = byCenterRevenue();
+  const fmtRevShort = v => v>=1e9?"Rp"+(v/1e9).toFixed(1)+"B":v>=1e6?"Rp"+Math.round(v/1e6)+"M":v>0?"Rp"+Math.round(v/1e3)+"K":"";
+
+  const centers = CONFIG.CENTERS.filter(c => cData[c].ns > 0 && cData[c].revenue > 0);
+  if(!centers.length) return;
+
+  const colorList = [
+    "#7B68EE","#63AAED","#5BC7A0","#F5A623","#E8706A","#B07FDD","#F083B0","#4EC9C0",
+    "#F4924A","#A3CF62","#36B5DC","#C47FDE","#E86FCF","#45D4D4","#78DE8A","#F7B942",
+    "#E87F6F","#A8D45A","#6CC9B0"
+  ];
+
+  const allNs  = centers.map(c => cData[c].ns);
+  const allAov = centers.map(c => cData[c].revenue / cData[c].ns);
+  const allRev = centers.map(c => cData[c].revenue);
+  const maxRev = Math.max(...allRev, 1);
+
+  // Axis bounds with comfortable padding
+  const nsMin  = 0;
+  const nsMax  = Math.max(...allNs)  * 1.25;
+  const aovMin = Math.max(0, Math.min(...allAov) * 0.75);
+  const aovMax = Math.max(...allAov) * 1.25;
+
+  // Median reference lines
+  const medNs  = [...allNs].sort((a,b)=>a-b)[Math.floor(allNs.length/2)];
+  const medAov = [...allAov].sort((a,b)=>a-b)[Math.floor(allAov.length/2)];
+
+  // Bubble radius: proportional to sqrt(revenue) for area encoding
+  const maxR = 46, minR = 14;
+  const sqrtMax = Math.sqrt(maxRev);
+  const radius = c => minR + (Math.sqrt(cData[c].revenue) / sqrtMax) * (maxR - minR);
+
+  // ── draw ──────────────────────────────────────────────────────────────────
+  function draw(){
+    const dpr = window.devicePixelRatio || 1;
+    const W = canvasEl.parentElement.clientWidth || 700;
+    const H = canvasEl.parentElement.clientHeight || 384;
+    canvasEl.width  = W * dpr;
+    canvasEl.height = H * dpr;
+    canvasEl.style.width  = W + "px";
+    canvasEl.style.height = H + "px";
+
+    const ctx = canvasEl.getContext("2d");
+    ctx.scale(dpr, dpr);
+
+    const pad = { top:24, right:28, bottom:52, left:68 };
+    const cw = W - pad.left - pad.right;
+    const ch = H - pad.top  - pad.bottom;
+
+    const toX = v => pad.left + (v - nsMin)  / (nsMax  - nsMin)  * cw;
+    const toY = v => pad.top  + (1 - (v - aovMin) / (aovMax - aovMin)) * ch;
+
+    // background
+    ctx.clearRect(0, 0, W, H);
+
+    // grid lines (light)
+    ctx.strokeStyle = "#E2E8F0"; ctx.lineWidth = 1;
+    const nsStep  = niceStep(nsMax  - nsMin,  5);
+    const aovStep = niceStep(aovMax - aovMin, 5);
+    for(let v = Math.ceil(nsMin/nsStep)*nsStep; v <= nsMax; v += nsStep){
+      const x = toX(v); ctx.beginPath(); ctx.moveTo(x, pad.top); ctx.lineTo(x, pad.top+ch); ctx.stroke();
+    }
+    for(let v = Math.ceil(aovMin/aovStep)*aovStep; v <= aovMax; v += aovStep){
+      const y = toY(v); ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(pad.left+cw, y); ctx.stroke();
+    }
+
+    // median reference lines (dashed)
+    ctx.setLineDash([5,4]); ctx.strokeStyle = "#94A3B8"; ctx.lineWidth = 1.2;
+    const xMed = toX(medNs), yMed = toY(medAov);
+    ctx.beginPath(); ctx.moveTo(xMed, pad.top); ctx.lineTo(xMed, pad.top+ch); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(pad.left, yMed); ctx.lineTo(pad.left+cw, yMed); ctx.stroke();
+    ctx.setLineDash([]);
+
+    // reference line labels
+    ctx.fillStyle = "#94A3B8"; ctx.font = "italic 11px Inter,sans-serif"; ctx.textAlign = "left";
+    ctx.fillText("Avg NS " + Math.round(medNs), xMed + 5, pad.top + 14);
+    ctx.textAlign = "right";
+    ctx.fillText("Avg AOV " + fmtRevShort(medAov), pad.left + cw - 5, yMed - 5);
+
+    // axes border
+    ctx.strokeStyle = "#CBD5E1"; ctx.lineWidth = 1;
+    ctx.strokeRect(pad.left, pad.top, cw, ch);
+
+    // x-axis ticks + labels
+    ctx.fillStyle = "#64748B"; ctx.font = "11px Inter,sans-serif"; ctx.textAlign = "center";
+    for(let v = Math.ceil(nsMin/nsStep)*nsStep; v <= nsMax; v += nsStep){
+      const x = toX(v);
+      ctx.fillText(Math.round(v), x, pad.top + ch + 16);
+    }
+    // x-axis title
+    ctx.font = "12px Inter,sans-serif"; ctx.fillStyle = "#94A3B8"; ctx.textAlign = "center";
+    ctx.fillText("New Students", pad.left + cw/2, H - 6);
+
+    // y-axis ticks + labels
+    ctx.textAlign = "right"; ctx.font = "11px Inter,sans-serif"; ctx.fillStyle = "#64748B";
+    for(let v = Math.ceil(aovMin/aovStep)*aovStep; v <= aovMax; v += aovStep){
+      const y = toY(v);
+      ctx.fillText(fmtRevShort(v), pad.left - 6, y + 4);
+    }
+    // y-axis title (rotated)
+    ctx.save(); ctx.translate(14, pad.top + ch/2); ctx.rotate(-Math.PI/2);
+    ctx.textAlign = "center"; ctx.font = "12px Inter,sans-serif"; ctx.fillStyle = "#94A3B8";
+    ctx.fillText("AOV (Rev ÷ NS)", 0, 0); ctx.restore();
+
+    // bubbles (back-pass: shadow rings)
+    centers.forEach((c,i) => {
+      const x = toX(cData[c].ns);
+      const y = toY(cData[c].revenue / cData[c].ns);
+      const r = radius(c);
+      const col = colorList[i % colorList.length];
+      ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI*2);
+      ctx.fillStyle = col + "40"; ctx.fill();
+      ctx.strokeStyle = col; ctx.lineWidth = 2; ctx.stroke();
+    });
+
+    // bubbles (front-pass: fill + label)
+    centers.forEach((c,i) => {
+      const x = toX(cData[c].ns);
+      const y = toY(cData[c].revenue / cData[c].ns);
+      const r = radius(c);
+      const col = colorList[i % colorList.length];
+      // filled circle
+      ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI*2);
+      ctx.fillStyle = col + "CC"; ctx.fill();
+      ctx.strokeStyle = "#fff"; ctx.lineWidth = 1.5; ctx.stroke();
+      // center label
+      ctx.fillStyle = "#fff"; ctx.font = "bold " + Math.max(9, Math.min(12, r*0.55)) + "px Inter,sans-serif";
+      ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      ctx.fillText(c, x, y);
+    });
+
+    ctx.textBaseline = "alphabetic";
+  }
+
+  function niceStep(range, steps){
+    const raw = range / steps;
+    const mag = Math.pow(10, Math.floor(Math.log10(raw)));
+    const nice = [1,2,2.5,5,10].find(f => f*mag >= raw) || 10;
+    return nice * mag;
+  }
+
+  draw();
+
+  // Tooltip on hover
+  canvasEl._aovCenters = centers;
+  canvasEl._aovCData   = cData;
+  canvasEl._aovToX     = v => { const pad=68, W=canvasEl.clientWidth, cw=W-pad-28; return pad+(v-nsMin)/(nsMax-nsMin)*cw; };
+  canvasEl._aovToY     = v => { const pad={t:24,b:52}, H=canvasEl.clientHeight, ch=H-pad.t-pad.b; return pad.t+(1-(v-aovMin)/(aovMax-aovMin))*ch; };
+  canvasEl._aovRadius  = radius;
+  canvasEl._aovFmt     = fmtRevShort;
+  canvasEl._aovColorList = colorList;
+  canvasEl._aovDraw    = draw;
+
+  if(!canvasEl._aovListenerAttached){
+    canvasEl._aovListenerAttached = true;
+    canvasEl.addEventListener("mousemove", e => {
+      const rect = canvasEl.getBoundingClientRect();
+      const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+      const cs = canvasEl._aovCenters, cd = canvasEl._aovCData;
+      let hit = null;
+      cs.forEach((c,i) => {
+        const x = canvasEl._aovToX(cd[c].ns);
+        const y = canvasEl._aovToY(cd[c].revenue / cd[c].ns);
+        const r = canvasEl._aovRadius(c);
+        if(Math.hypot(mx-x, my-y) <= r) hit = {c, x, y, i};
+      });
+      canvasEl._aovDraw();
+      if(hit){
+        const {c,x,y,i} = hit;
+        const col = canvasEl._aovColorList[i % canvasEl._aovColorList.length];
+        const ff = canvasEl._aovFmt;
+        const {ns,revenue} = cd[c];
+        const aov = Math.round(revenue/ns);
+        const ctx2 = canvasEl.getContext("2d");
+        const dpr = window.devicePixelRatio||1;
+        ctx2.save(); ctx2.scale(dpr,dpr);
+        const lines = [c, "NS: "+Math.round(ns).toLocaleString(), "AOV: "+ff(aov), "Rev: "+ff(revenue)];
+        const tw = 130, th = lines.length*17+12, tx = Math.min(x+12, canvasEl.clientWidth-tw-8), ty = Math.max(y-th-8, 8);
+        ctx2.fillStyle = "rgba(15,23,42,.88)"; ctx2.beginPath();
+        ctx2.roundRect(tx,ty,tw,th,6); ctx2.fill();
+        ctx2.fillStyle = col; ctx2.font = "bold 12px Inter,sans-serif"; ctx2.textAlign = "left";
+        ctx2.fillText(lines[0], tx+8, ty+15);
+        ctx2.fillStyle = "#fff"; ctx2.font = "11px Inter,sans-serif";
+        lines.slice(1).forEach((l,li) => ctx2.fillText(l, tx+8, ty+15+(li+1)*16));
+        ctx2.restore();
+        canvasEl.style.cursor = "pointer";
+      } else { canvasEl.style.cursor = "default"; }
+    });
+    canvasEl.addEventListener("mouseleave", () => { canvasEl._aovDraw(); });
+  }
+
+  // redraw on resize
+  if(!canvasEl._resizeObserver){
+    canvasEl._resizeObserver = new ResizeObserver(() => { if(canvasEl._aovDraw) canvasEl._aovDraw(); });
+    canvasEl._resizeObserver.observe(canvasEl.parentElement);
+  }
+}
+
+function refresh(){
+  const agg = aggregate(); renderPills(); renderKPIs(agg); renderTrend();
+  renderFunnelChart("chart-l2b","leads","bookings","Leads","Bookings","#06B6D4");
+  renderFunnelChart("chart-b2s","bookings","showUps","Bookings","Show-ups","#10B981");
+  renderFunnelChart("chart-s2n","showUps","newStudents","Show-ups","Paid New Students","#6366F1");
+  renderConvRates();
+  renderCostChart();
+  renderDonut(); renderCenterPerf(); renderHeatmap();
+  renderRevenueTrend(); renderRevByCenter(); renderRevByChannel(); renderAovNs();
+}
+
+function renderDiag(){
+  const cols = STATE.cols, headers = STATE.headers, dr = STATE.dateRange; const lines = [];
+  lines.push(`<div><b>Sheet:</b> <code>${CONFIG.SHEET_ID}</code> · <b>Tab:</b> <code>${CONFIG.SHEET_TAB}</code></div>`);
+  lines.push(`<div><b>Rows parsed:</b> ${STATE.rows.length}${dr.min?` · <b>Date range:</b> ${dr.min.toDateString()} → ${dr.max.toDateString()}`:""}</div>`);
+  $("diag").innerHTML = lines.join("");
+}
+
+async function init(){
+  $("sheet-link").href = `https://docs.google.com/spreadsheets/d/${CONFIG.SHEET_ID}/edit`;
+  $("refresh-btn").onclick = ()=>location.reload();
+  $("custom-apply").onclick = ()=>{
+    const s = $("date-start").value, e = $("date-end").value;
+    if(!s||!e){ alert("Pick both dates"); return; }
+    STATE.filters.customStart = new Date(s); STATE.filters.customEnd = new Date(e+"T23:59:59"); refresh();
+  };
+  renderPills();
+  try {
+    const table = await fetchSheet(CONFIG.SHEET_TAB); STATE.rows = parseRows(table);
+  } catch(err) {
+    STATE.rows = parseRows(makeDemoTable()); $("last-updated").innerHTML = `<span style="color:#B45309;font-weight:600">⚠️ Live fetch failed, check diagnostics.</span>`;
+  }
+  if(STATE.dateRange.min){
+    $("date-start").value = STATE.dateRange.min.toISOString().slice(0,10);
+    $("date-end").value   = STATE.dateRange.max.toISOString().slice(0,10);
+  }
+  if(!STATE.rows.length) $("last-updated").textContent = "loaded " + new Date().toLocaleTimeString();
+  refresh(); renderDiag();
+}
+window.addEventListener("DOMContentLoaded", init);
+</script>
+</body>
+</html>
