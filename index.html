@@ -4,198 +4,92 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Sparks Preschool — Growth Dashboard</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0/dist/chartjs-plugin-datalabels.min.js"></script>
 <style>
-:root{ --ink:#0F172A;--ink2:#334155;--ink3:#64748B;--line:#E2E8F0;--line2:#F1F5F9;--bg:#F4F6F9; --accent:#6366F1;--accent2:#8B5CF6;--green:#10B981;--amber:#F59E0B;--red:#EF4444;--card:#FFFFFF; }
-html,body{background:var(--bg);color:var(--ink);font-family:'DM Sans',sans-serif;scroll-behavior:smooth}
-.mono{font-family:'DM Mono',monospace}
-#filter-bar{ position:sticky;top:0;z-index:200; background:#fff;border-bottom:1px solid var(--line); box-shadow:0 2px 12px rgba(0,0,0,.06); transition:padding .2s ease,box-shadow .2s; }
-#filter-bar.expanded{ padding:12px 24px 14px; }
-#filter-bar.collapsed{ padding:6px 24px; }
-#filter-bar.collapsed #filter-full{ display:none; }
-#filter-bar.collapsed #filter-compact{ display:flex; }
-#filter-bar.expanded  #filter-compact{ display:none; }
-#filter-bar.expanded  #filter-full{ display:block; }
-#filter-compact{align-items:center;gap:10px;flex-wrap:wrap}
-.compact-badge{font-size:11px;font-weight:600;padding:3px 9px;border-radius:99px;background:#F1F5F9;color:#334155;cursor:pointer}
-#filter-toggle{font-size:11px;font-weight:700;padding:4px 10px;border-radius:8px;border:1px solid var(--line);color:#64748B;cursor:pointer;background:#fff;display:flex;align-items:center;gap:4px}
-.pill{cursor:pointer;user-select:none;transition:all .15s ease}
-.pill.on{background:#0F172A;color:#fff;border-color:#0F172A}
-.pill.off{background:#fff;color:#0F172A;border-color:#E2E8F0}
-.pill-accent.on{background:linear-gradient(135deg,#6366F1,#8B5CF6);color:#fff;border-color:transparent}
-.card{background:var(--card);border:1px solid var(--line);border-radius:14px}
-.card-inset{background:#F8FAFC;border:1px solid var(--line);border-radius:10px}
-.tab-btn{padding:.45rem .9rem;border-radius:8px;font-weight:600;font-size:.82rem;cursor:pointer;transition:all .15s}
-.section-label{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#94A3B8;margin-bottom:10px}
-.hm-tooltip{ position:fixed;z-index:9999;pointer-events:none; background:rgba(15,23,42,.92);color:#fff;font-size:11px;border-radius:8px; padding:8px 12px;min-width:160px;box-shadow:0 4px 20px rgba(0,0,0,.25); display:none;line-height:1.6;font-family:'DM Sans',sans-serif; }
-.league-tbl th{font-size:11px;font-weight:600;color:#64748B;text-transform:uppercase;padding:8px 10px;border-bottom:2px solid #E2E8F0}
-.league-tbl td{padding:8px 10px;font-size:12px;border-bottom:1px solid #F1F5F9}
+  body { background: #F4F6F9; font-family: 'DM Sans', sans-serif; }
+  .card { background: white; border: 1px solid #E2E8F0; border-radius: 14px; }
+  .section-label { font-size: 11px; font-weight: 700; text-transform: uppercase; color: #94A3B8; margin: 15px 0 10px; }
 </style>
 </head>
-<body class="min-h-screen pb-16">
-<div id="hm-tooltip" class="hm-tooltip"></div>
+<body class="pb-16">
+
 <script>
 const CONFIG = {
-  SHEET_ID:   "1F9pE41X-RmLa5MM53NG3QjqMMRn74sdUSiXNDq_Faqg",
-  SHEET_TAB:  "Full OBT",
+  SHEET_ID: "1F9pE41X-RmLa5MM53NG3QjqMMRn74sdUSiXNDq_Faqg",
+  SHEET_TAB: "Full OBT",
+  // Map these to the EXACT headers from your sheet
   COL: {
-    date: ["date"], center: ["center","branch","cabang","outlet","location"], channel: ["source","channel","lead source","traffic source"], adSpend: ["ads spending","ad spend","spend","spending","cost"], leads: ["^leads$","leads"], bookingBD: ["booking_bd","booking bd","booking by book","book date"], bookingTD: ["booking_td","booking td","booking by trial","trial date"], showUps: ["^su$","show ups","show-ups","showups","attended"], newStudents: ["^ns$","new students","newstudents","active enrollment"], leadsT: ["leads t","leads target","target leads"], bookingT: ["booking t","bookings target","target booking"], showUpsT: ["su t","showup target","target su"], newStudentsT: ["ns t","ns target","target ns","new student target"], revenue: ["^revenue$","revenue","total revenue","rev","income","gross revenue","pendapatan"],
+    date: ["Date"],
+    center: ["Center"],
+    channel: ["Source"],
+    adSpend: ["Ads Spend"],
+    leads: ["Leads"],
+    bookingBD: ["Booking_BD"],
+    bookingTD: ["Booking_TD"],
+    showUps: ["SU"],
+    newStudents: ["NS"],
+    revenue: ["Revenue"] // Set to null/fallback if not in sheet
   },
-  BOOKING_BASIS: "BD",
   CENTERS: ["BTR","BGR","BSD","CKR","KGD","KMG","TBT","BHI","BTY","BTU","CBN","TMP","BDM","STR","GLC","CBG","CBB","CKG","BDG"],
-  CHANNELS: ["Meta","Google","TikTok","Cross-Sell","Referral","Offline","Others"],
-  CHANNEL_ALIASES: { "meta":"Meta","facebook":"Meta","instagram":"Meta","ig":"Meta","fb":"Meta","google":"Google","google ads":"Google","adwords":"Google","search":"Google","tiktok":"TikTok","tik tok":"TikTok","tt":"TikTok","cross sell":"Cross-Sell","cross-sell":"Cross-Sell","crosssell":"Cross-Sell","x-sell":"Cross-Sell","referral":"Referral","refer":"Referral","mgm":"Referral","word of mouth":"Referral","offline":"Offline","walk in":"Offline","walk-in":"Offline","event":"Offline","flyer":"Offline" },
+  CHANNELS: ["Meta","Google","TikTok","Cross-Sell","Referral","Offline"],
 };
-</script>
 
-<header style="background:linear-gradient(135deg,#0F172A 0%,#1E293B 100%);padding:18px 24px 16px">
-  <div class="flex items-center justify-between flex-wrap gap-3">
-    <div>
-      <h1 class="text-2xl font-bold tracking-tight text-white">Sparks Preschool</h1>
-      <p class="text-sm" style="color:#94A3B8">Growth Executive Dashboard · Live from Google Sheets · <span id="last-updated" style="color:#F59E0B">loading…</span></p>
-    </div>
-    <div class="flex items-center gap-2">
-      <button id="refresh-btn" class="tab-btn text-white hover:bg-white/10" style="border:1px solid rgba(255,255,255,.2)">↻ Refresh</button>
-      <a id="sheet-link" target="_blank" class="tab-btn text-white hover:bg-white/10" style="border:1px solid rgba(255,255,255,.2)">Open Sheet ↗</a>
-    </div>
-  </div>
-</header>
+// Global State
+const STATE = { rows: [], cols: {}, filters: { centers: new Set(CONFIG.CENTERS), channels: new Set(CONFIG.CHANNELS), period: "L4W" } };
 
-<div id="filter-bar" class="expanded">
-  <div id="filter-compact">
-    <button id="filter-toggle" onclick="toggleFilter()">▼ Filters</button>
-    <span class="text-xs text-slate-400 font-medium">Period:</span> <span id="compact-period" class="compact-badge"></span>
-    <span class="text-xs text-slate-400 font-medium">Centers:</span> <span id="compact-centers" class="compact-badge"></span>
-    <span class="text-xs text-slate-400 font-medium">Channels:</span> <span id="compact-channels" class="compact-badge"></span>
-  </div>
-  <div id="filter-full">
-    <div class="flex items-center justify-between mb-2">
-      <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Filters</span>
-      <button onclick="toggleFilter()" class="tab-btn" style="background:#F1F5F9;color:#64748B;font-size:11px;padding:3px 10px">▲ Collapse</button>
-    </div>
-    <div class="space-y-2.5">
-      <div class="flex items-start gap-3 flex-wrap">
-        <div class="text-xs font-semibold uppercase tracking-wider text-slate-500 pt-1.5 w-16 shrink-0">Period</div>
-        <div class="flex flex-wrap items-center gap-1.5">
-          <div id="period-pills-weekly" class="flex flex-wrap gap-1.5"></div>
-          <div id="period-pills-monthly" class="flex flex-wrap gap-1.5"></div>
-          <div id="period-pills-other" class="flex flex-wrap gap-1.5"></div>
-        </div>
-      </div>
-      <div class="flex items-start gap-3 flex-wrap">
-        <div class="text-xs font-semibold uppercase tracking-wider text-slate-500 pt-1.5 w-16 shrink-0">Center</div>
-        <div id="center-pills" class="flex flex-wrap gap-1.5"></div>
-      </div>
-      <div class="flex items-start gap-3 flex-wrap">
-        <div class="text-xs font-semibold uppercase tracking-wider text-slate-500 pt-1.5 w-16 shrink-0">Channel</div>
-        <div id="channel-pills" class="flex flex-wrap gap-1.5"></div>
-      </div>
-    </div>
-  </div>
-</div>
+// Core Fetch Logic
+async function loadData() {
+  const url = `https://docs.google.com/spreadsheets/d/${CONFIG.SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(CONFIG.SHEET_TAB)}`;
+  try {
+    const res = await fetch(url);
+    const txt = await res.text();
+    const json = JSON.parse(txt.match(/setResponse\(([\s\S]*)\)\s*;?\s*$/)[1]);
+    processData(json.table);
+  } catch (e) {
+    console.error("Fetch Error:", e);
+    document.getElementById("last-updated").innerHTML = "Error loading data. Check console.";
+  }
+}
 
-<div id="main-content" class="px-6 pt-4 space-y-4 pb-12">
-  <div id="kpi-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3"></div>
-  <div class="section-label">Target Attainment</div>
-  <div class="card p-4"><div id="pacing-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"></div></div>
-  <div class="section-label">Conversion Funnel</div>
-  <div class="card p-4"><div id="funnel-waterfall" class="flex gap-3 items-end justify-center flex-wrap py-4"></div></div>
+function processData(table) {
+  const headers = table.cols.map(c => c.label);
+  // Match indices
+  for (const k in CONFIG.COL) {
+    STATE.cols[k] = headers.findIndex(h => CONFIG.COL[k].includes(h));
+  }
   
-  <div class="grid grid-cols-12 gap-4">
-    <div class="card p-4 col-span-12"><div class="relative h-80"><canvas id="chart-trend"></canvas></div></div>
-    <div class="card p-4 col-span-12"><div class="relative h-72"><canvas id="chart-l2b"></canvas></div></div>
-    <div class="card p-4 col-span-12"><div class="relative h-72"><canvas id="chart-b2s"></canvas></div></div>
-    <div class="card p-4 col-span-12"><div class="relative h-72"><canvas id="chart-s2n"></canvas></div></div>
-    <div class="card p-4 col-span-12"><div class="relative h-64"><canvas id="chart-conv-rates"></canvas></div></div>
-    <div class="card p-4 col-span-12"><div class="relative h-72"><canvas id="chart-costs"></canvas></div></div>
-    <div class="card p-4 col-span-12"><div class="relative h-80"><canvas id="chart-unit-economics"></canvas></div></div>
-    <div class="card p-4 col-span-12"><div class="relative h-80"><canvas id="chart-roas"></canvas></div></div>
-    <div class="card p-4 col-span-12 lg:col-span-7"><div class="relative h-80"><canvas id="chart-quadrant"></canvas></div><div id="quad-legend" class="flex flex-wrap gap-3 mt-2 justify-center"></div></div>
-    <div class="card p-4 col-span-12 lg:col-span-5"><div class="relative h-72"><canvas id="chart-donut"></canvas></div></div>
-    <div class="card p-4 col-span-12 lg:col-span-7"><div class="relative h-96"><canvas id="chart-center"></canvas></div></div>
-    <div class="card p-4 col-span-12 lg:col-span-5"><div class="relative h-64"><canvas id="chart-dow"></canvas></div></div>
-    <div class="card p-4 col-span-12"><div class="relative h-80"><canvas id="chart-revenue-trend"></canvas></div></div>
-    <div class="card p-4 col-span-12 lg:col-span-7"><div class="relative h-96"><canvas id="chart-rev-center"></canvas></div></div>
-    <div class="card p-4 col-span-12 lg:col-span-5"><div class="relative h-96"><canvas id="chart-rev-channel"></canvas></div></div>
-    <div class="card p-4 col-span-12"><div class="relative h-[400px]"><canvas id="chart-aov-ns"></canvas></div></div>
-    <div class="card p-4 col-span-12 overflow-hidden scroll-x"><table id="heatmap" class="w-full text-xs heat-cell"></table></div>
-  </div>
-  <div class="section-label">Center League Table</div>
-  <div class="card p-4 overflow-hidden scroll-x"><table id="league-table" class="league-tbl w-full"></table></div>
-</div>
-
-<script>
-Chart.register(ChartDataLabels);
-const $ = id => document.getElementById(id);
-const fmt = n => n==null||isNaN(n) ? "–" : Math.round(n).toLocaleString();
-const fmtPct1 = n => n==null||isNaN(n) ? "–" : (n*100).toFixed(1)+"%";
-const fmtRevShort = v => v==null||isNaN(v)||v===0 ? "–" : v>=1e9 ? "Rp"+(v/1e9).toFixed(1)+"B" : v>=1e6 ? "Rp"+Math.round(v/1e6)+"M" : v>=1e3 ? "Rp"+Math.round(v/1e3)+"K" : "Rp"+Math.round(v);
-const palette = {Meta:"#1877F2",Google:"#EA4335",TikTok:"#111827","Cross-Sell":"#8B5CF6",Referral:"#10B981",Offline:"#F59E0B",Others:"#94A3B8"};
-const DOW_LABELS = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
-
-let filterExpanded = true;
-function toggleFilter(){
-  filterExpanded = !filterExpanded;
-  const bar = $("filter-bar");
-  bar.classList.toggle("expanded", filterExpanded);
-  bar.classList.toggle("collapsed", !filterExpanded);
-  updateCompactBadges();
-}
-function updateCompactBadges(){
-  $("compact-period").textContent = STATE.filters.period;
-  $("compact-centers").textContent = STATE.filters.centers.size === CONFIG.CENTERS.length ? "All" : STATE.filters.centers.size+" sel.";
-  $("compact-channels").textContent = STATE.filters.channels.size === CONFIG.CHANNELS.length ? "All" : [...STATE.filters.channels].join(", ");
+  STATE.rows = table.rows.map(r => {
+    const get = (key) => r.c[STATE.cols[key]]?.v;
+    return {
+      date: new Date(get("date")),
+      center: get("center"),
+      channel: get("channel"),
+      adSpend: parseFloat(get("adSpend") || 0),
+      leads: parseFloat(get("leads") || 0),
+      bookingBD: parseFloat(get("bookingBD") || 0),
+      bookingTD: parseFloat(get("bookingTD") || 0),
+      showUps: parseFloat(get("showUps") || 0),
+      newStudents: parseFloat(get("newStudents") || 0),
+      revenue: parseFloat(get("revenue") || 0)
+    };
+  }).filter(r => !isNaN(r.date));
+  
+  document.getElementById("last-updated").textContent = "Data Loaded Successfully";
+  // Trigger your render functions here
+  console.log("Data loaded, rows:", STATE.rows.length);
 }
 
-const STATE = {
-  rows:[],filters:{centers:new Set(CONFIG.CENTERS),channels:new Set(CONFIG.CHANNELS.filter(c=>c!=="Others")),period:"L4W"},
-  charts:{},leagueSort:{col:"ns",dir:-1},heatmapMode:"booking"
-};
-
-function inFilter(row){
-  // EXCLUDE OTHERS
-  if(row.channel === 'Others') return false; 
-  if(row.center && !STATE.filters.centers.has(row.center)) return false;
-  if(!STATE.filters.channels.has(row.channel)) return false;
-  return true;
-}
-
-function parseDate(v){
-  if(v==null||v==="") return null;
-  if(v instanceof Date) return isNaN(v)?null:v;
-  if(typeof v==="string"){
-    const m=v.match(/^Date\((\d+),(\d+),(\d+)(?:,(\d+),(\d+),(\d+))?\)$/);
-    if(m) return new Date(+m[1],+m[2],+m[3]);
-    const d=new Date(v); if(!isNaN(d)) return d;
-  }
-  return null;
-}
-
-function renderPills(){
-  const ch=$("channel-pills");ch.innerHTML="";
-  // Only show channels that aren't "Others"
-  const channelsToShow = CONFIG.CHANNELS.filter(c => c !== "Others");
-  for(const c of channelsToShow){
-    ch.appendChild(makePill(c,STATE.filters.channels.has(c),false,()=>{
-      STATE.filters.channels.has(c)?STATE.filters.channels.delete(c):STATE.filters.channels.add(c);
-      refresh();
-    },palette[c]));
-  }
-  // ... (rest of the rendering functions remain essentially as before, using inFilter(row))
-}
-
-// Ensure the helper functions aggregate, weeklySeries, etc. call inFilter(r)
-// (The provided logic in previous turn already did this; ensure it remains intact)
-
-async function init(){
-  // ... (Fetch logic remains the same)
-  // Run refresh() at the end
-  refresh();
-}
-window.addEventListener("DOMContentLoaded",init);
+window.onload = loadData;
 </script>
+
+<header class="p-6 bg-slate-900 text-white">
+  <h1 class="text-2xl font-bold">Sparks Preschool</h1>
+  <p id="last-updated" class="text-sm text-slate-400">Loading data...</p>
+</header>
+<div id="main-content" class="p-6">
+  </div>
+
 </body>
 </html>
