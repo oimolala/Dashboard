@@ -4,92 +4,402 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Sparks Preschool — Growth Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0/dist/chartjs-plugin-datalabels.min.js"></script>
 <style>
-  body { background: #F4F6F9; font-family: 'DM Sans', sans-serif; }
-  .card { background: white; border: 1px solid #E2E8F0; border-radius: 14px; }
-  .section-label { font-size: 11px; font-weight: 700; text-transform: uppercase; color: #94A3B8; margin: 15px 0 10px; }
+:root{
+  --ink:#0F172A;--ink2:#334155;--ink3:#64748B;--line:#E2E8F0;--line2:#F1F5F9;--bg:#F4F6F9;
+  --accent:#6366F1;--accent2:#8B5CF6;--green:#10B981;--amber:#F59E0B;--red:#EF4444;--card:#FFFFFF;
+}
+html,body{background:var(--bg);color:var(--ink);font-family:'DM Sans',sans-serif;scroll-behavior:smooth}
+.mono{font-family:'DM Mono',monospace}
+#filter-bar{ position:sticky;top:0;z-index:200; background:#fff;border-bottom:1px solid var(--line); box-shadow:0 2px 12px rgba(0,0,0,.06); transition:padding .2s ease; }
+#filter-bar.expanded{ padding:12px 24px 14px; }
+#filter-bar.collapsed{ padding:6px 24px; }
+#filter-bar.collapsed #filter-full{ display:none; }
+#filter-bar.collapsed #filter-compact{ display:flex; }
+#filter-bar.expanded  #filter-compact{ display:none; }
+#filter-bar.expanded  #filter-full{ display:block; }
+#filter-compact{align-items:center;gap:10px;flex-wrap:wrap}
+.compact-badge{font-size:11px;font-weight:600;padding:3px 9px;border-radius:99px;background:#F1F5F9;color:#334155;cursor:pointer}
+#filter-toggle{font-size:11px;font-weight:700;padding:4px 10px;border-radius:8px;border:1px solid var(--line);color:#64748B;cursor:pointer;background:#fff;display:flex;align-items:center;gap:4px}
+.pill{cursor:pointer;user-select:none;transition:all .15s ease}
+.pill.on{background:#0F172A;color:#fff;border-color:#0F172A}
+.pill.off{background:#fff;color:#0F172A;border-color:#E2E8F0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px}
+.card-inset{background:#F8FAFC;border:1px solid var(--line);border-radius:10px}
+.scroll-x{overflow-x:auto;scrollbar-width:thin}
+.tab-btn{padding:.45rem .9rem;border-radius:8px;font-weight:600;font-size:.82rem;cursor:pointer;transition:all .15s}
+.section-label{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#94A3B8;margin-bottom:10px}
+.hm-tooltip{ position:fixed;z-index:9999;pointer-events:none; background:rgba(15,23,42,.92);color:#fff;font-size:11px;border-radius:8px; padding:8px 12px;min-width:160px;box-shadow:0 4px 20px rgba(0,0,0,.25); display:none;line-height:1.6;}
+.league-tbl th{font-size:11px;font-weight:600;color:#64748B;text-transform:uppercase;padding:8px 10px;border-bottom:2px solid #E2E8F0}
+.league-tbl td{padding:8px 10px;font-size:12px;border-bottom:1px solid #F1F5F9}
+.kpi-card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px 14px 10px;position:relative;overflow:hidden;}
+.kpi-card .top-bar{position:absolute;top:0;left:0;right:0;height:3px;}
+.delta-badge{display:inline-flex;align-items:center;gap:2px;font-size:10px;font-weight:600;padding:2px 6px;border-radius:99px}
+.delta-up{background:#D1FAE5;color:#065F46}
+.delta-dn{background:#FEE2E2;color:#991B1B}
+.delta-neu{background:#F1F5F9;color:#475569}
 </style>
 </head>
-<body class="pb-16">
+<body class="min-h-screen pb-16">
+
+<div id="hm-tooltip" class="hm-tooltip"></div>
 
 <script>
+// --- 1. CONFIGURATION ---
 const CONFIG = {
-  SHEET_ID: "1F9pE41X-RmLa5MM53NG3QjqMMRn74sdUSiXNDq_Faqg",
-  SHEET_TAB: "Full OBT",
-  // Map these to the EXACT headers from your sheet
+  SHEET_ID:   "1F9pE41X-RmLa5MM53NG3QjqMMRn74sdUSiXNDq_Faqg",
+  SHEET_TAB:  "Full OBT",
   COL: {
-    date: ["Date"],
-    center: ["Center"],
-    channel: ["Source"],
-    adSpend: ["Ads Spend"],
-    leads: ["Leads"],
-    bookingBD: ["Booking_BD"],
-    bookingTD: ["Booking_TD"],
-    showUps: ["SU"],
-    newStudents: ["NS"],
-    revenue: ["Revenue"] // Set to null/fallback if not in sheet
+    date:         ["Date"],
+    center:       ["Center"],
+    channel:      ["Source"],
+    adSpend:      ["Ads Spend"],
+    leads:        ["Leads"],
+    bookingBD:    ["Booking_BD"],
+    bookingTD:    ["Booking_TD"],
+    showUps:      ["SU"],
+    newStudents:  ["NS"],
+    revenue:      ["Revenue", "Total Revenue"],
+    leadsT:       ["Leads Target"],
+    bookingT:     ["Booking Target"],
+    showUpsT:     ["SU Target"],
+    newStudentsT: ["NS Target"]
   },
+  BOOKING_BASIS: "BD",
   CENTERS: ["BTR","BGR","BSD","CKR","KGD","KMG","TBT","BHI","BTY","BTU","CBN","TMP","BDM","STR","GLC","CBG","CBB","CKG","BDG"],
-  CHANNELS: ["Meta","Google","TikTok","Cross-Sell","Referral","Offline"],
+  CHANNELS: ["Meta","Google","TikTok","Cross-Sell","Referral","Offline"], 
+  CHANNEL_ALIASES: {
+    "meta":"Meta","google":"Google","tiktok":"TikTok","cross sell":"Cross-Sell","referral":"Referral","offline":"Offline"
+  },
+};
+</script>
+
+<header style="background:linear-gradient(135deg,#0F172A 0%,#1E293B 100%);padding:18px 24px 16px">
+  <div class="flex items-center justify-between flex-wrap gap-3">
+    <div>
+      <h1 class="text-2xl font-bold tracking-tight text-white">Sparks Preschool</h1>
+      <p class="text-sm" style="color:#94A3B8">Growth Executive Dashboard · <span id="last-updated" style="color:#F59E0B">Connecting to Google Sheets...</span></p>
+    </div>
+    <div class="flex items-center gap-2">
+      <button onclick="location.reload()" class="tab-btn text-white hover:bg-white/10" style="border:1px solid rgba(255,255,255,.2)">↻ Refresh</button>
+    </div>
+  </div>
+</header>
+
+<div id="filter-bar" class="expanded">
+  <div id="filter-compact">
+    <button onclick="toggleFilter()" class="tab-btn border">▼ Filters</button>
+    <span class="text-xs text-slate-400 font-medium">Period:</span> <span id="compact-period" class="compact-badge"></span>
+    <span class="text-xs text-slate-400 font-medium">Centers:</span> <span id="compact-centers" class="compact-badge"></span>
+    <span class="text-xs text-slate-400 font-medium">Channels:</span> <span id="compact-channels" class="compact-badge"></span>
+  </div>
+  <div id="filter-full">
+    <div class="flex items-center justify-between mb-2">
+      <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Filters</span>
+      <button onclick="toggleFilter()" class="tab-btn" style="background:#F1F5F9;color:#64748B;font-size:11px;padding:3px 10px">▲ Collapse</button>
+    </div>
+    <div class="space-y-2.5">
+      <div class="flex items-start gap-3 flex-wrap">
+        <div class="text-xs font-semibold uppercase tracking-wider text-slate-500 pt-1.5 w-16 shrink-0">Period</div>
+        <div class="flex flex-wrap items-center gap-1.5" id="period-pills-container"></div>
+      </div>
+      <div class="flex items-start gap-3 flex-wrap">
+        <div class="text-xs font-semibold uppercase tracking-wider text-slate-500 pt-1.5 w-16 shrink-0">Center</div>
+        <div id="center-pills" class="flex flex-wrap gap-1.5"></div>
+      </div>
+      <div class="flex items-start gap-3 flex-wrap">
+        <div class="text-xs font-semibold uppercase tracking-wider text-slate-500 pt-1.5 w-16 shrink-0">Channel</div>
+        <div id="channel-pills" class="flex flex-wrap gap-1.5"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="main-content" class="px-6 pt-4 space-y-4 pb-12">
+  <div class="section-label">Key Performance Indicators</div>
+  <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3" id="kpi-grid"></div>
+  
+  <div class="section-label">Target Attainment</div>
+  <div class="card p-4"><div id="pacing-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"></div></div>
+  
+  <div class="section-label">Conversion Funnel</div>
+  <div class="card p-4"><div id="funnel-waterfall" class="flex gap-3 items-end justify-center flex-wrap py-4"></div></div>
+
+  <div class="grid grid-cols-12 gap-4">
+    <div class="card p-4 col-span-12"><h3 class="font-semibold mb-2">Weekly Funnel Trend</h3><div class="relative h-80"><canvas id="chart-trend"></canvas></div></div>
+    
+    <div class="card p-4 col-span-12"><h3 class="font-semibold mb-2">Acquisition Costs (CPL, CPB, CAC)</h3><div class="relative h-72"><canvas id="chart-costs"></canvas></div></div>
+    <div class="card p-4 col-span-12"><h3 class="font-semibold mb-2">Unit Economics — ARPU vs CAC by Channel</h3><div class="relative h-80"><canvas id="chart-unit-economics"></canvas></div></div>
+    <div class="card p-4 col-span-12"><h3 class="font-semibold mb-2">ROAS & Capital Elasticity Curve</h3><div class="relative h-80"><canvas id="chart-roas"></canvas></div></div>
+    
+    <div class="card p-4 col-span-12 lg:col-span-7"><h3 class="font-semibold mb-2">Channel Efficiency Quadrant</h3><div class="relative h-80"><canvas id="chart-quadrant"></canvas></div></div>
+    <div class="card p-4 col-span-12 lg:col-span-5"><h3 class="font-semibold mb-2">New Students by Channel</h3><div class="relative h-72"><canvas id="chart-donut"></canvas></div></div>
+    <div class="card p-4 col-span-12 lg:col-span-7"><h3 class="font-semibold mb-2">Center Performance (Stacked)</h3><div class="relative h-96"><canvas id="chart-center"></canvas></div></div>
+    <div class="card p-4 col-span-12 lg:col-span-5"><h3 class="font-semibold mb-2">Day-of-Week Pattern</h3><div class="relative h-64"><canvas id="chart-dow"></canvas></div></div>
+    
+    <div class="card p-4 col-span-12 overflow-hidden scroll-x">
+      <div class="flex gap-1.5 mb-2">
+        <button class="hm-toggle-btn active text-xs border p-1 rounded" id="hm-btn-booking" onclick="setHeatmapMode('booking')">Booking CVR</button>
+        <button class="hm-toggle-btn text-xs border p-1 rounded" id="hm-btn-showup" onclick="setHeatmapMode('showup')">Show-up CVR</button>
+        <button class="hm-toggle-btn text-xs border p-1 rounded" id="hm-btn-paid" onclick="setHeatmapMode('paid')">Paid NS CVR</button>
+      </div>
+      <table id="heatmap" class="w-full text-xs heat-cell"></table>
+    </div>
+  </div>
+
+  <div class="section-label mt-4">Center League Table</div>
+  <div class="card p-4 overflow-hidden scroll-x"><table id="league-table" class="league-tbl w-full text-left"></table></div>
+  
+  <details class="card p-4 mt-4 text-xs text-slate-500"><summary>🔧 Diagnostics</summary><div id="diag" class="mt-2"></div></details>
+</div>
+
+<script>
+// --- 2. DATA FETCHING & PARSING ---
+Chart.register(ChartDataLabels);
+const fmt = n => n==null||isNaN(n) ? "–" : Math.round(n).toLocaleString();
+const fmtPct1 = n => n==null||isNaN(n) ? "–" : (n*100).toFixed(1)+"%";
+const fmtRevShort = v => v==null||isNaN(v)||v===0 ? "–" : v>=1e9 ? "Rp"+(v/1e9).toFixed(1)+"B" : v>=1e6 ? "Rp"+Math.round(v/1e6)+"M" : v>=1e3 ? "Rp"+Math.round(v/1e3)+"K" : "Rp"+Math.round(v);
+const palette = {Meta:"#1877F2",Google:"#EA4335",TikTok:"#111827","Cross-Sell":"#8B5CF6",Referral:"#10B981",Offline:"#F59E0B",Others:"#94A3B8"};
+
+let filterExpanded = true;
+const STATE = {
+  rows:[], cols:{}, charts:{}, heatmapMode:"booking", leagueSort:{col:"ns",dir:-1},
+  filters:{ centers:new Set(CONFIG.CENTERS), channels:new Set(CONFIG.CHANNELS), period:"L4W" }
 };
 
-// Global State
-const STATE = { rows: [], cols: {}, filters: { centers: new Set(CONFIG.CENTERS), channels: new Set(CONFIG.CHANNELS), period: "L4W" } };
+function resolveColumns(headers){
+  const lower = headers.map(h => String(h||"").toLowerCase().trim());
+  const out = {};
+  for(const key in CONFIG.COL){
+    out[key] = -1;
+    for(const alias of CONFIG.COL[key]){
+      const idx = lower.indexOf(alias.toLowerCase());
+      if(idx !== -1){ out[key] = idx; break; }
+    }
+  }
+  return out;
+}
 
-// Core Fetch Logic
 async function loadData() {
   const url = `https://docs.google.com/spreadsheets/d/${CONFIG.SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(CONFIG.SHEET_TAB)}`;
   try {
     const res = await fetch(url);
     const txt = await res.text();
     const json = JSON.parse(txt.match(/setResponse\(([\s\S]*)\)\s*;?\s*$/)[1]);
-    processData(json.table);
+    
+    const table = json.table;
+    const headers = table.cols.map(c => (c.label && c.label.trim()) || c.id || "");
+    const cols = resolveColumns(headers);
+    
+    STATE.rows = table.rows.map(r => {
+      const get = (key) => cols[key] < 0 ? null : (r.c[cols[key]] ? r.c[cols[key]].v : null);
+      
+      let d = get("date");
+      if(typeof d === 'string' && d.startsWith('Date(')){
+         const m = d.match(/Date\((\d+),(\d+),(\d+)/);
+         if(m) d = new Date(m[1], m[2], m[3]);
+      } else if (typeof d === 'number') {
+         d = new Date(Math.round((d-25569)*86400*1000));
+      } else {
+         d = new Date(d);
+      }
+
+      let ch = String(get("channel") || "Others").trim();
+      let canonCh = "Others";
+      for(const k in CONFIG.CHANNEL_ALIASES){
+        if(ch.toLowerCase().includes(k)) { canonCh = CONFIG.CHANNEL_ALIASES[k]; break; }
+      }
+
+      return {
+        date: d,
+        center: String(get("center") || "").split(/[\/,]/)[0].trim().toUpperCase(),
+        channel: canonCh,
+        adSpend: parseFloat(get("adSpend") || 0),
+        leads: parseFloat(get("leads") || 0),
+        bookingBD: parseFloat(get("bookingBD") || 0),
+        bookingTD: parseFloat(get("bookingTD") || 0),
+        showUps: parseFloat(get("showUps") || 0),
+        newStudents: parseFloat(get("newStudents") || 0),
+        revenue: parseFloat(get("revenue") || 0),
+        leadsT: parseFloat(get("leadsT") || 0),
+        bookingT: parseFloat(get("bookingT") || 0),
+        showUpsT: parseFloat(get("showUpsT") || 0),
+        newStudentsT: parseFloat(get("newStudentsT") || 0)
+      };
+    }).filter(r => !isNaN(r.date) && r.date != null);
+
+    document.getElementById("last-updated").textContent = "Data Loaded Successfully ✓";
+    document.getElementById("last-updated").style.color = "#10B981";
+    
+    // Debug output
+    document.getElementById("diag").innerHTML = `Parsed ${STATE.rows.length} rows. Mapped columns: <br>` + 
+      Object.entries(cols).map(([k,v]) => `${k} -> ${v >= 0 ? headers[v] : 'MISSING'}`).join('<br>');
+    
+    refresh(); // Build UI!
   } catch (e) {
-    console.error("Fetch Error:", e);
-    document.getElementById("last-updated").innerHTML = "Error loading data. Check console.";
+    document.getElementById("last-updated").textContent = "Error Loading Data";
+    document.getElementById("last-updated").style.color = "#EF4444";
+    console.error(e);
   }
 }
 
-function processData(table) {
-  const headers = table.cols.map(c => c.label);
-  // Match indices
-  for (const k in CONFIG.COL) {
-    STATE.cols[k] = headers.findIndex(h => CONFIG.COL[k].includes(h));
-  }
-  
-  STATE.rows = table.rows.map(r => {
-    const get = (key) => r.c[STATE.cols[key]]?.v;
-    return {
-      date: new Date(get("date")),
-      center: get("center"),
-      channel: get("channel"),
-      adSpend: parseFloat(get("adSpend") || 0),
-      leads: parseFloat(get("leads") || 0),
-      bookingBD: parseFloat(get("bookingBD") || 0),
-      bookingTD: parseFloat(get("bookingTD") || 0),
-      showUps: parseFloat(get("showUps") || 0),
-      newStudents: parseFloat(get("newStudents") || 0),
-      revenue: parseFloat(get("revenue") || 0)
-    };
-  }).filter(r => !isNaN(r.date));
-  
-  document.getElementById("last-updated").textContent = "Data Loaded Successfully";
-  // Trigger your render functions here
-  console.log("Data loaded, rows:", STATE.rows.length);
+// --- 3. FILTERING & UTILS ---
+function toggleFilter(){
+  filterExpanded = !filterExpanded;
+  const bar = document.getElementById("filter-bar");
+  bar.className = filterExpanded ? "expanded" : "collapsed";
+  document.getElementById("compact-period").textContent = STATE.filters.period;
+  document.getElementById("compact-centers").textContent = STATE.filters.centers.size === CONFIG.CENTERS.length ? "All" : STATE.filters.centers.size+" sel.";
+  document.getElementById("compact-channels").textContent = STATE.filters.channels.size === CONFIG.CHANNELS.length ? "All" : [...STATE.filters.channels].join(", ");
 }
 
+function daysAgo(n){const x=new Date();x.setHours(0,0,0,0);x.setDate(x.getDate()-n);return x;}
+function periodRange(){
+  const end = new Date(); end.setHours(23,59,59,999);
+  const p = STATE.filters.period;
+  if(p==="L1W") return [daysAgo(7),end];
+  if(p==="L2W") return [daysAgo(14),end];
+  if(p==="L4W") return [daysAgo(28),end];
+  if(p==="L8W") return [daysAgo(56),end];
+  if(p==="L1M") return [daysAgo(30),end];
+  if(p==="L3M") return [daysAgo(90),end];
+  if(p==="YTD") return [new Date(end.getFullYear(),0,1),end];
+  return [new Date(2000,0,1),end]; // All
+}
+
+function inFilter(row){
+  if(row.channel === "Others") return false; // Hard exclude 'Others'
+  const [s, e] = periodRange();
+  if(row.date < s || row.date > e) return false;
+  if(row.center && !STATE.filters.centers.has(row.center)) return false;
+  if(!STATE.filters.channels.has(row.channel)) return false;
+  return true;
+}
+
+function makePill(label, isActive, onclick){
+  const b = document.createElement("button");
+  b.className = `pill border text-xs font-medium px-3 py-1.5 rounded-full ${isActive ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'}`;
+  b.textContent = label;
+  b.onclick = onclick;
+  return b;
+}
+
+function renderPills(){
+  // Period
+  const pc = document.getElementById("period-pills-container"); pc.innerHTML = "";
+  ["L1W","L2W","L4W","L1M","L3M","YTD","All"].forEach(p => {
+    pc.appendChild(makePill(p, STATE.filters.period === p, () => { STATE.filters.period = p; refresh(); }));
+  });
+  // Center
+  const cc = document.getElementById("center-pills"); cc.innerHTML = "";
+  const allC = STATE.filters.centers.size === CONFIG.CENTERS.length;
+  cc.appendChild(makePill("All", allC, () => { 
+    if(allC) STATE.filters.centers.clear(); else CONFIG.CENTERS.forEach(c => STATE.filters.centers.add(c)); refresh(); 
+  }));
+  CONFIG.CENTERS.forEach(c => {
+    cc.appendChild(makePill(c, STATE.filters.centers.has(c), () => {
+      STATE.filters.centers.has(c) ? STATE.filters.centers.delete(c) : STATE.filters.centers.add(c); refresh();
+    }));
+  });
+  // Channel
+  const chc = document.getElementById("channel-pills"); chc.innerHTML = "";
+  const allCh = STATE.filters.channels.size === CONFIG.CHANNELS.length;
+  chc.appendChild(makePill("All", allCh, () => { 
+    if(allCh) STATE.filters.channels.clear(); else CONFIG.CHANNELS.forEach(c => STATE.filters.channels.add(c)); refresh(); 
+  }));
+  CONFIG.CHANNELS.forEach(c => {
+    chc.appendChild(makePill(c, STATE.filters.channels.has(c), () => {
+      STATE.filters.channels.has(c) ? STATE.filters.channels.delete(c) : STATE.filters.channels.add(c); refresh();
+    }));
+  });
+}
+
+// --- 4. AGGREGATION & RENDERING ---
+function aggregate(){
+  let leads=0,bookings=0,showUps=0,newStudents=0,adSpend=0,revenue=0,leadsT=0,bookingT=0,showUpsT=0,newStudentsT=0;
+  for(const r of STATE.rows){
+    if(!inFilter(r)) continue;
+    leads+=r.leads; bookings+=(CONFIG.BOOKING_BASIS==="TD"?r.bookingTD:r.bookingBD);
+    showUps+=r.showUps; newStudents+=r.newStudents; adSpend+=r.adSpend; revenue+=r.revenue;
+    leadsT+=r.leadsT; bookingT+=r.bookingT; showUpsT+=r.showUpsT; newStudentsT+=r.newStudentsT;
+  }
+  return { leads,bookings,showUps,newStudents,adSpend,revenue,leadsT,bookingT,showUpsT,newStudentsT, 
+           cpl:leads?adSpend/leads:0, cpb:bookings?adSpend/bookings:0, cac:newStudents?adSpend/newStudents:0, 
+           aov:newStudents?revenue/newStudents:0 };
+}
+
+function refresh(){
+  renderPills();
+  const agg = aggregate();
+  
+  // KPIs
+  document.getElementById("kpi-grid").innerHTML = `
+    <div class="kpi-card"><div class="top-bar bg-indigo-500"></div><div class="text-[10px] text-indigo-500 font-bold mb-1">REVENUE</div><div class="text-2xl font-bold mono">${fmtRevShort(agg.revenue)}</div></div>
+    <div class="kpi-card"><div class="top-bar bg-red-500"></div><div class="text-[10px] text-red-500 font-bold mb-1">AD SPEND</div><div class="text-2xl font-bold mono">${fmtRevShort(agg.adSpend)}</div></div>
+    <div class="kpi-card"><div class="top-bar bg-rose-500"></div><div class="text-[10px] text-rose-500 font-bold mb-1">CAC</div><div class="text-2xl font-bold mono">${fmtRevShort(agg.cac)}</div></div>
+    <div class="kpi-card"><div class="top-bar bg-purple-500"></div><div class="text-[10px] text-purple-500 font-bold mb-1">ARPU (AOV)</div><div class="text-2xl font-bold mono">${fmtRevShort(agg.aov)}</div></div>
+    <div class="kpi-card"><div class="top-bar bg-teal-500"></div><div class="text-[10px] text-teal-500 font-bold mb-1">CPL</div><div class="text-2xl font-bold mono">${fmtRevShort(agg.cpl)}</div></div>
+    <div class="kpi-card"><div class="top-bar bg-amber-500"></div><div class="text-[10px] text-amber-500 font-bold mb-1">CPB</div><div class="text-2xl font-bold mono">${fmtRevShort(agg.cpb)}</div></div>
+  `;
+
+  // Waterfall
+  const wStages = [
+    {label:"Leads", val:agg.leads, color:"#6366F1"}, {label:"Bookings", val:agg.bookings, color:"#06B6D4"},
+    {label:"Show-ups", val:agg.showUps, color:"#10B981"}, {label:"Paid NS", val:agg.newStudents, color:"#F59E0B"}
+  ];
+  document.getElementById("funnel-waterfall").innerHTML = wStages.map((s,i) => {
+    const prev = i>0 ? wStages[i-1].val : null;
+    const cvr = prev ? Math.round(s.val/prev*100) : null;
+    const w = Math.max(80, Math.round(s.val / Math.max(agg.leads,1) * 200));
+    return `<div class="flex flex-col items-center"><div class="text-xs font-semibold text-slate-500">${s.label}</div><div class="text-xl font-bold mono" style="color:${s.color}">${fmt(s.val)}</div><div class="rounded-md mt-1" style="width:${w}px;height:40px;background:${s.color}"></div>${cvr!=null?`<div class="text-[11px] font-bold mt-1 text-slate-400">${cvr}% CVR</div>`:''}</div>`;
+  }).join('<div class="pb-6 text-slate-300 text-xl">→</div>');
+  
+  // Draw basic trend chart
+  const weekly = new Map();
+  STATE.rows.filter(inFilter).forEach(r => {
+    const wk = startOfWeek(r.date).toISOString().slice(0,10);
+    if(!weekly.has(wk)) weekly.set(wk, {wk, leads:0, bookings:0, showUps:0, ns:0});
+    const b = weekly.get(wk); b.leads+=r.leads; b.bookings+=(CONFIG.BOOKING_BASIS==="TD"?r.bookingTD:r.bookingBD); b.showUps+=r.showUps; b.ns+=r.newStudents;
+  });
+  const series = [...weekly.values()].sort((a,b)=>a.wk.localeCompare(b.wk));
+  
+  chart("chart-trend", {
+    type:"line", data:{ labels:series.map(s=>s.wk), datasets:[
+      {label:"Leads", data:series.map(s=>s.leads), borderColor:"#6366F1", backgroundColor:"rgba(99,102,241,.1)", fill:true},
+      {label:"Bookings", data:series.map(s=>s.bookings), borderColor:"#06B6D4"},
+      {label:"Show-ups", data:series.map(s=>s.showUps), borderColor:"#10B981"},
+      {label:"New Students", data:series.map(s=>s.ns), borderColor:"#F59E0B"}
+    ]}, options:{responsive:true, maintainAspectRatio:false, plugins:{datalabels:{display:false}}}
+  });
+  
+  renderLeagueTable();
+}
+
+function chart(id,cfg){
+  if(STATE.charts[id]) STATE.charts[id].destroy();
+  STATE.charts[id] = new Chart(document.getElementById(id).getContext("2d"), cfg);
+}
+
+function startOfWeek(d){const x=new Date(d);const day=x.getDay()||7;x.setHours(0,0,0,0);x.setDate(x.getDate()-day+1);return x;}
+
+function renderLeagueTable(){
+  const cData = {}; CONFIG.CENTERS.forEach(c => cData[c] = {ns:0, leads:0, revenue:0});
+  STATE.rows.filter(inFilter).forEach(r => {
+    if(cData[r.center]){ cData[r.center].ns+=r.newStudents; cData[r.center].leads+=r.leads; cData[r.center].revenue+=r.revenue; }
+  });
+  
+  const rows = CONFIG.CENTERS.map(c => ({ center:c, ns:cData[c].ns, leads:cData[c].leads, rev:cData[c].revenue })).sort((a,b)=>b.ns-a.ns);
+  
+  document.getElementById("league-table").innerHTML = `<thead><tr><th>Center</th><th class="text-right">NS</th><th class="text-right">Leads</th><th class="text-right">Revenue</th></tr></thead><tbody>` + 
+    rows.map(r => `<tr><td class="font-bold">${r.center}</td><td class="text-right">${fmt(r.ns)}</td><td class="text-right">${fmt(r.leads)}</td><td class="text-right">${fmtRevShort(r.rev)}</td></tr>`).join('') + `</tbody>`;
+}
+
+// Start
 window.onload = loadData;
 </script>
-
-<header class="p-6 bg-slate-900 text-white">
-  <h1 class="text-2xl font-bold">Sparks Preschool</h1>
-  <p id="last-updated" class="text-sm text-slate-400">Loading data...</p>
-</header>
-<div id="main-content" class="p-6">
-  </div>
-
 </body>
 </html>
