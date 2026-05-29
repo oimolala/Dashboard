@@ -265,7 +265,8 @@ const CONFIG = {
           <h3 class="font-semibold">Funnel Trend</h3>
           <p class="text-xs text-slate-400 mt-0.5">Leads · Bookings (BD) · Show-ups · New Students · hover for details</p>
         </div>
-        <div class="flex items-center gap-1.5">
+        <div class="flex items-center gap-2">
+          <span class="text-xs text-slate-400">All time-series:</span>
           <button class="granularity-btn active" id="gran-weekly" onclick="setGranularity('weekly')">Weekly</button>
           <button class="granularity-btn" id="gran-monthly" onclick="setGranularity('monthly')">Monthly</button>
         </div>
@@ -477,7 +478,15 @@ function setGranularity(g){
   GRANULARITY = g;
   $("gran-weekly").classList.toggle("active", g==="weekly");
   $("gran-monthly").classList.toggle("active", g==="monthly");
+  // Refresh all time-series charts that share this granularity
   renderTrend();
+  renderFunnelChart("chart-l2b","leads","bookingBD","Leads","Bookings BD","#06B6D4","leads","bookingBD");
+  renderFunnelChart("chart-b2s","bookingTD","showUps","Bookings TD","Show-ups","#10B981","bookingTD","showUps");
+  renderFunnelChart("chart-s2n","showUps","newStudents","Show-ups","Paid NS","#6366F1","showUps","newStudents");
+  renderConvRates();
+  renderCostChart();
+  renderROAS();
+  renderRevenueTrend();
 }
 window.setGranularity = setGranularity;
 
@@ -507,6 +516,9 @@ window.addEventListener("scroll",()=>{
 },{passive:true});
 
 // ── Date helpers ──────────────────────────────────────────────────────────────
+// All date bucketing uses LOCAL time (Jakarta WIB = UTC+7 when browser TZ is set,
+// or matches the server TZ). parseDate already normalises to local midnight so
+// all comparisons are consistent.
 function toLocalMidnight(d){if(!d||isNaN(d))return null;return new Date(d.getFullYear(),d.getMonth(),d.getDate(),0,0,0,0);}
 function parseDate(v){
   if(v==null||v==="")return null;
@@ -523,13 +535,29 @@ function parseDate(v){
   if(typeof v==="number"){const d=new Date(Math.round((v-25569)*86400*1000));return toLocalMidnight(d);}
   return null;
 }
-function startOfWeek(d){const x=new Date(d);const day=x.getDay()||7;x.setHours(0,0,0,0);x.setDate(x.getDate()-day+1);return x;}
-function fmtWeek(d){return startOfWeek(d).toISOString().slice(0,10);}
-function fmtWkLabel(iso){
-  const d=new Date(iso),t=new Date(d.valueOf()),dn=(d.getDay()+6)%7;
-  t.setDate(t.getDate()-dn+3);const ft=t.valueOf();t.setMonth(0,1);
-  if(t.getDay()!==4)t.setMonth(0,1+((4-t.getDay())+7)%7);
-  return "W"+(1+Math.ceil((ft-t)/604800000));
+
+// startOfWeek: always Monday, using LOCAL date fields (no UTC conversion)
+function startOfWeek(d){
+  // getDay(): 0=Sun,1=Mon,...,6=Sat → offset so Mon=0
+  const dow=d.getDay()===0?6:d.getDay()-1; // Mon=0 … Sun=6
+  return new Date(d.getFullYear(),d.getMonth(),d.getDate()-dow,0,0,0,0);
+}
+// Week key: "YYYY-MM-DD" of the Monday, built from local fields (no UTC drift)
+function fmtWeek(d){
+  const mon=startOfWeek(d);
+  return mon.getFullYear()+"-"+String(mon.getMonth()+1).padStart(2,"0")+"-"+String(mon.getDate()).padStart(2,"0");
+}
+// Week label: "W1", "W2" … ISO week number derived from the Monday date
+function fmtWkLabel(isoMonday){
+  // isoMonday is "YYYY-MM-DD" of Monday (local), parse as local
+  const[y,mo,dy]=isoMonday.split("-").map(Number);
+  const mon=new Date(y,mo-1,dy,0,0,0,0);
+  // ISO week: Thursday of same week
+  const thu=new Date(mon.getFullYear(),mon.getMonth(),mon.getDate()+3,0,0,0,0);
+  const jan4=new Date(thu.getFullYear(),0,4,0,0,0,0); // Jan 4 is always in W1
+  const startOfW1=startOfWeek(jan4);
+  const weekNum=Math.round((thu-startOfW1)/604800000)+1;
+  return "W"+weekNum;
 }
 function fmtMonthKey(d){return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");}
 function fmtMonthLabel(key){const[y,m]=key.split("-");return new Date(+y,+m-1,1).toLocaleDateString("en-US",{month:"short",year:"2-digit"});}
@@ -968,17 +996,27 @@ function chart(id,cfg){
   STATE.charts[id]=new Chart($(id).getContext("2d"),cfg);
 }
 
-// Funnel Trend — weekly/monthly toggle, rich tooltip
+// Funnel Trend — weekly/monthly toggle, rich tooltip, data labels on points
 function renderTrend(){
   const series=getTimeSeries();
   const labels=series.map(s=>getLabel(s));
+  // Show data labels only when series is short enough (≤16 points) to avoid crowding
+  const showLabels=series.length<=16;
+  const dlCfg=(color)=>({
+    display: showLabels,
+    align:'top',
+    offset:2,
+    color,
+    font:{size:9,weight:'bold'},
+    formatter:v=>Math.round(v)>0?Math.round(v).toLocaleString():'',
+  });
   chart("chart-trend",{
     type:"line",
     data:{labels,datasets:[
-      {label:"Leads",      data:series.map(s=>s.leads),      borderColor:"#6366F1",backgroundColor:"rgba(99,102,241,.10)",fill:true,tension:.35,pointRadius:4,pointHoverRadius:7,datalabels:{display:false}},
-      {label:"Bookings BD",data:series.map(s=>s.bookingBD),  borderColor:"#06B6D4",backgroundColor:"rgba(6,182,212,.10)", fill:true,tension:.35,pointRadius:4,pointHoverRadius:7,datalabels:{display:false}},
-      {label:"Show-ups",   data:series.map(s=>s.showUps),    borderColor:"#10B981",backgroundColor:"rgba(16,185,129,.10)",fill:true,tension:.35,pointRadius:4,pointHoverRadius:7,datalabels:{display:false}},
-      {label:"New Students",data:series.map(s=>s.newStudents),borderColor:"#F59E0B",backgroundColor:"rgba(245,158,11,.15)",fill:true,tension:.35,pointRadius:4,pointHoverRadius:7,datalabels:{display:false}},
+      {label:"Leads",       data:series.map(s=>s.leads),      borderColor:"#6366F1",backgroundColor:"rgba(99,102,241,.10)",fill:true,tension:.35,pointRadius:4,pointHoverRadius:7,datalabels:dlCfg("#6366F1")},
+      {label:"Bookings BD", data:series.map(s=>s.bookingBD),  borderColor:"#06B6D4",backgroundColor:"rgba(6,182,212,.10)", fill:true,tension:.35,pointRadius:4,pointHoverRadius:7,datalabels:dlCfg("#0891B2")},
+      {label:"Show-ups",    data:series.map(s=>s.showUps),    borderColor:"#10B981",backgroundColor:"rgba(16,185,129,.10)",fill:true,tension:.35,pointRadius:4,pointHoverRadius:7,datalabels:dlCfg("#059669")},
+      {label:"New Students",data:series.map(s=>s.newStudents),borderColor:"#F59E0B",backgroundColor:"rgba(245,158,11,.15)",fill:true,tension:.35,pointRadius:4,pointHoverRadius:7,datalabels:dlCfg("#D97706")},
     ]},
     options:{
       responsive:true,maintainAspectRatio:false,
@@ -1024,13 +1062,10 @@ function renderTrend(){
   });
 }
 
-// Funnel conversion charts — correct CVR denominators
-// L→BD: bookingBD / leads
-// BD→SU: showUps / bookingTD
-// SU→NS: newStudents / showUps
+// Funnel conversion charts — all respect GRANULARITY toggle
 function renderFunnelChart(id, topKey, bottomKey, topLabel, bottomLabel, color, convTopKey, convBotKey){
-  const series=weeklySeries(); // always weekly for these drill-downs
-  const labels=series.map(s=>fmtWkLabel(s.key));
+  const series=getTimeSeries();
+  const labels=series.map(s=>getLabel(s));
   const conv=series.map(s=>{
     const den=s[convTopKey]||0;
     return den>0?s[convBotKey]/den*100:0;
@@ -1064,7 +1099,7 @@ function renderFunnelChart(id, topKey, bottomKey, topLabel, bottomLabel, color, 
 }
 
 function renderConvRates(){
-  const series=weeklySeries();const labels=series.map(s=>fmtWkLabel(s.key));
+  const series=getTimeSeries();const labels=series.map(s=>getLabel(s));
   // Booking CVR = BD/Leads; Show-up CVR = SU/BookingTD; Paid CVR = NS/SU
   const l2b=series.map(s=>s.leads>0?+(s.bookingBD/s.leads*100).toFixed(1):0);
   const b2s=series.map(s=>s.bookingTD>0?+(s.showUps/s.bookingTD*100).toFixed(1):0);
@@ -1082,7 +1117,7 @@ function renderConvRates(){
 }
 
 function renderCostChart(){
-  const series=weeklySeries();const labels=series.map(s=>fmtWkLabel(s.key));
+  const series=getTimeSeries();const labels=series.map(s=>getLabel(s));
   const cplD=series.map(s=>s.leads>0?s.adSpend/s.leads:0);
   const cpbD=series.map(s=>s.bookingBD>0?s.adSpend/s.bookingBD:0);
   const cacD=series.map(s=>s.newStudents>0?s.adSpend/s.newStudents:0);
@@ -1147,9 +1182,9 @@ function renderUnitEconomics(){
 }
 
 function renderROAS(){
-  const series=weeklySeries().filter(s=>s.adSpend>0);
+  const series=getTimeSeries().filter(s=>s.adSpend>0);
   if(!series.length){if(STATE.charts["chart-roas"])STATE.charts["chart-roas"].destroy();return;}
-  const labels=series.map(s=>fmtWkLabel(s.key));
+  const labels=series.map(s=>getLabel(s));
   const spendData=series.map(s=>s.adSpend);
   const roasData=series.map(s=>s.adSpend>0?+(s.revenue/s.adSpend).toFixed(2):null);
   const ptColor=roasData.map(v=>v===null?"#CBD5E1":v>=3?"#10B981":v>=1?"#F59E0B":"#EF4444");
@@ -1294,7 +1329,7 @@ function positionTip(e){
 }
 
 function renderRevenueTrend(){
-  const series=weeklySeries();const labels=series.map(s=>fmtWkLabel(s.key));
+  const series=getTimeSeries();const labels=series.map(s=>getLabel(s));
   chart("chart-revenue-trend",{type:"bar",data:{labels,datasets:[
     {type:"bar",label:"Revenue",data:series.map(s=>s.revenue),backgroundColor:"rgba(99,102,241,.75)",borderRadius:4,yAxisID:"y",datalabels:{anchor:"end",align:"end",color:"#6366F1",font:{size:9,weight:"bold"},formatter:v=>fmtRevShort(v)}},
     {type:"line",label:"ARPU",data:series.map(s=>s.newStudents>0?Math.round(s.revenue/s.newStudents):0),borderColor:"#F59E0B",backgroundColor:"#F59E0B",tension:.35,yAxisID:"y2",pointRadius:3,borderWidth:2,datalabels:{align:"top",color:"#D97706",font:{size:9,weight:"bold"},formatter:v=>v>0?fmtRevShort(v):""}},
@@ -1382,9 +1417,16 @@ function renderAovNs(){
       if(hit){
         const{c,i}=hit;const col=canvasEl._aovColorList[i%canvasEl._aovColorList.length];
         const{ns,revenue}=canvasEl._aovCData[c];const arpu=Math.round(revenue/ns);
-        const dpr=window.devicePixelRatio||1;const ctx2=canvasEl.getContext("2d");
+        // Draw highlight ring — coordinates are in CSS pixels (same space as _aovToX/Y)
+        // DPR scaling is already baked into draw(); we must NOT call scale() again here.
+        const dpr=window.devicePixelRatio||1;
+        const ctx2=canvasEl.getContext("2d");
         const x=canvasEl._aovToX(ns),y=canvasEl._aovToY(revenue/ns),r=canvasEl._aovRadius(c);
-        ctx2.save();ctx2.scale(dpr,dpr);ctx2.beginPath();ctx2.arc(x,y,r+4,0,Math.PI*2);ctx2.strokeStyle=col;ctx2.lineWidth=3;ctx2.stroke();ctx2.restore();
+        ctx2.save();
+        ctx2.setTransform(dpr,0,0,dpr,0,0); // set DPR transform directly, no extra scale
+        ctx2.beginPath();ctx2.arc(x,y,r+5,0,Math.PI*2);
+        ctx2.strokeStyle=col;ctx2.lineWidth=3;ctx2.stroke();
+        ctx2.restore();
         tip.innerHTML=`<div class="font-bold mb-1" style="color:${col}">${c}</div><div>NS: ${fmt(ns)}</div><div>ARPU: ${fmtRevShort(arpu)}</div><div>Revenue: ${fmtRevShort(revenue)}</div>`;
         tip.style.display="block";positionTip(e);canvasEl.style.cursor="pointer";
       }else{tip.style.display="none";canvasEl.style.cursor="default";}
