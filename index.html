@@ -46,31 +46,26 @@ html,body{background:var(--bg);color:var(--ink);font-family:'DM Sans',ui-sans-se
 details>summary{list-style:none;cursor:pointer}
 details>summary::-webkit-details-marker{display:none}
 
-/* ── KPI cards — Superset style ────────────────────────────────── */
+/* ── KPI cards — compact Big-3 consultant style ─────────────────── */
 .kpi-card{
-  background:#fff;border:1px solid var(--line);border-radius:12px;
-  padding:16px 16px 12px;position:relative;overflow:hidden;
+  background:#fff;border:1px solid var(--line);border-radius:8px;
+  padding:12px 14px 10px;position:relative;overflow:hidden;
   transition:box-shadow .15s;
 }
-.kpi-card:hover{box-shadow:0 4px 20px rgba(0,0,0,.08)}
-.kpi-card .top-bar{position:absolute;top:0;left:0;right:0;height:3px;border-radius:12px 12px 0 0}
-.kpi-card.primary .top-bar{height:4px}
-.kpi-card.primary{border-color:#E0E7FF;background:linear-gradient(135deg,#FAFBFF 0%,#fff 100%)}
-/* Superset-style metric label */
-.kpi-label{font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:#94A3B8;margin-bottom:4px}
-/* Big number */
-.kpi-val{font-size:28px;font-weight:700;line-height:1.1;letter-spacing:-.02em;font-family:'DM Mono',monospace}
-/* Sparkline-style mini trend area */
-.kpi-spark{height:32px;margin-top:8px;margin-bottom:4px;position:relative}
-.kpi-spark canvas{width:100%!important;height:32px!important}
-/* Delta badge */
-.kpi-delta{display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:700;padding:3px 8px;border-radius:6px;margin-top:2px}
+.kpi-card:hover{box-shadow:0 2px 12px rgba(0,0,0,.07)}
+.kpi-card .top-bar{position:absolute;top:0;left:0;right:0;height:2px;border-radius:8px 8px 0 0}
+.kpi-card.primary .top-bar{height:3px}
+.kpi-card.primary{border-color:#E0E7FF;background:#FAFBFF}
+.kpi-label{font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#94A3B8;margin-bottom:3px}
+.kpi-val{font-size:20px;font-weight:700;line-height:1.15;letter-spacing:-.01em;font-family:'DM Mono',monospace}
+.kpi-spark{height:24px;margin-top:6px;margin-bottom:2px;position:relative}
+.kpi-spark canvas{width:100%!important;height:24px!important}
+.kpi-delta{display:inline-flex;align-items:center;gap:2px;font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px}
 .delta-up{background:#D1FAE5;color:#065F46}
 .delta-dn{background:#FEE2E2;color:#991B1B}
 .delta-neu{background:#F1F5F9;color:#475569}
-.kpi-sub{font-size:10px;color:#94A3B8;margin-top:1px}
-/* comparison label e.g. "vs prev week" */
-.kpi-vs{font-size:10px;color:#CBD5E1;margin-left:4px}
+.kpi-sub{font-size:10px;color:#94A3B8;margin-top:2px}
+.kpi-vs{font-size:9px;color:#CBD5E1;margin-left:3px}
 
 /* progress */
 .progress-track{background:#F1F5F9;border-radius:99px;height:4px;margin-top:8px;overflow:hidden}
@@ -159,7 +154,7 @@ const CONFIG = {
     "meta":"Meta","facebook":"Meta","instagram":"Meta","ig":"Meta","fb":"Meta",
     "google":"Google","google ads":"Google","adwords":"Google","search":"Google",
     "tiktok":"TikTok","tik tok":"TikTok","tt":"TikTok",
-    "cross sell":"Cross-Sell","cross-sell":"Cross-Sell","crosssell":"Cross-Sell","x-sell":"Cross-Sell",
+    "cross sell":"Cross-Sell","cross-sell":"Cross-Sell","crosssell":"Cross-Sell","x-sell":"Cross-Sell","cross_sell":"Cross-Sell",
     "referral":"Referral","refer":"Referral","mgm":"Referral","word of mouth":"Referral",
     "offline":"Offline","walk in":"Offline","walk-in":"Offline","event":"Offline","flyer":"Offline",
   },
@@ -245,7 +240,7 @@ const CONFIG = {
   <!-- KPI Grid -->
   <div>
     <div class="section-label">Key Performance Indicators</div>
-    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3" id="kpi-grid"></div>
+    <div class="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-7 gap-2" id="kpi-grid"></div>
   </div>
 
   <!-- Target Attainment -->
@@ -333,15 +328,14 @@ const CONFIG = {
       <div class="flex items-center justify-between mb-1 flex-wrap gap-2">
         <div>
           <h3 class="font-semibold">Unit Economics — ARPU vs CAC by Channel</h3>
-          <p class="text-xs text-slate-400 mt-0.5">ARPU left axis · CAC right axis · Margin line overlaid</p>
+          <p class="text-xs text-slate-400 mt-0.5">ARPU vs CAC side-by-side · ranked by ARPU · hover for margin &amp; ratio</p>
         </div>
         <div class="flex items-center gap-3 text-xs text-slate-500 flex-wrap">
-          <span class="inline-flex items-center gap-1.5"><span style="width:12px;height:12px;border-radius:3px;background:#6366F1;display:inline-block"></span>ARPU (left)</span>
-          <span class="inline-flex items-center gap-1.5"><span style="width:12px;height:12px;border-radius:3px;background:#EF4444;display:inline-block"></span>CAC (right)</span>
-          <span class="inline-flex items-center gap-1.5"><span style="width:24px;height:3px;background:#10B981;display:inline-block;border-radius:2px"></span>Margin</span>
+          <span class="inline-flex items-center gap-1.5"><span style="width:12px;height:12px;border-radius:3px;background:#6366F1;display:inline-block"></span>ARPU (channel colour)</span>
+          <span class="inline-flex items-center gap-1.5"><span style="width:12px;height:12px;border-radius:3px;background:rgba(239,68,68,.3);border:1.5px solid #EF4444;display:inline-block"></span>CAC (paid ch. only)</span>
         </div>
       </div>
-      <div class="relative h-80"><canvas id="chart-unit-economics"></canvas></div>
+      <div class="relative h-64"><canvas id="chart-unit-economics"></canvas></div>
     </div>
 
     <div class="card p-4 col-span-12">
@@ -1186,29 +1180,62 @@ function renderCostChart(){
 
 // ── Ads Spend Area Chart — Meta, Google, TikTok + Total ──────────────────────
 function renderAdsSpendArea(){
-  const series=getTimeSeries().filter(s=>s.adSpend>0||s.spendMeta>0||s.spendGoogle>0||s.spendTikTok>0);
-  if(!series.length){if(STATE.charts["chart-ads-spend"])STATE.charts["chart-ads-spend"].destroy();return;}
+  const allSeries=getTimeSeries();
+  // Only include periods with any spend at all
+  const series=allSeries.filter(s=>s.adSpend>0);
+  const canvasEl=$("chart-ads-spend");
+  if(!series.length){
+    if(STATE.charts["chart-ads-spend"])STATE.charts["chart-ads-spend"].destroy();
+    if(canvasEl){const ctx=canvasEl.getContext("2d");ctx.clearRect(0,0,canvasEl.width,canvasEl.height);}
+    return;
+  }
   const labels=series.map(s=>getLabel(s));
+  // Show value labels only when ≤12 points
+  const showLbl=series.length<=12;
+  const dlCfg=(color)=>({
+    display:showLbl,anchor:'end',align:'top',offset:2,
+    color,font:{size:8,weight:'bold'},
+    formatter:v=>v>0?fmtRevShort(v):''
+  });
   chart("chart-ads-spend",{
     type:"line",
     data:{labels,datasets:[
-      {label:"Total",   data:series.map(s=>s.adSpend),    borderColor:"#0F172A",backgroundColor:"rgba(15,23,42,.06)",  fill:true,tension:.35,pointRadius:3,borderWidth:2.5,borderDash:[5,3],datalabels:{display:false}},
-      {label:"Meta",    data:series.map(s=>s.spendMeta),  borderColor:"#1877F2",backgroundColor:"rgba(24,119,242,.12)",fill:true,tension:.35,pointRadius:3,borderWidth:2,datalabels:{display:false}},
-      {label:"Google",  data:series.map(s=>s.spendGoogle),borderColor:"#EA4335",backgroundColor:"rgba(234,67,53,.10)", fill:true,tension:.35,pointRadius:3,borderWidth:2,datalabels:{display:false}},
-      {label:"TikTok",  data:series.map(s=>s.spendTikTok),borderColor:"#111827",backgroundColor:"rgba(17,24,39,.08)",  fill:true,tension:.35,pointRadius:3,borderWidth:2,datalabels:{display:false}},
+      {label:"Total",   data:series.map(s=>s.adSpend),
+       borderColor:"#0F172A",backgroundColor:"rgba(15,23,42,.05)",
+       fill:true,tension:.35,pointRadius:4,borderWidth:2,borderDash:[6,3],
+       datalabels:dlCfg("#0F172A")},
+      {label:"Meta",    data:series.map(s=>s.spendMeta),
+       borderColor:"#1877F2",backgroundColor:"rgba(24,119,242,.10)",
+       fill:true,tension:.35,pointRadius:3,borderWidth:2,
+       datalabels:dlCfg("#1877F2")},
+      {label:"Google",  data:series.map(s=>s.spendGoogle),
+       borderColor:"#EA4335",backgroundColor:"rgba(234,67,53,.08)",
+       fill:true,tension:.35,pointRadius:3,borderWidth:2,
+       datalabels:dlCfg("#EA4335")},
+      {label:"TikTok",  data:series.map(s=>s.spendTikTok),
+       borderColor:"#6B7280",backgroundColor:"rgba(107,114,128,.07)",
+       fill:true,tension:.35,pointRadius:3,borderWidth:2,
+       datalabels:dlCfg("#6B7280")},
     ]},
     options:{
       responsive:true,maintainAspectRatio:false,
       interaction:{mode:"index",intersect:false},
       plugins:{
         legend:{position:"bottom",labels:{boxWidth:10,font:{size:11}}},
-        datalabels:{display:false},
+        datalabels:{},
         tooltip:{callbacks:{
-          label:ctx=>`${ctx.dataset.label}: ${fmtRevShort(ctx.parsed.y)}`,
+          label:ctx=>{
+            const v=ctx.parsed.y;
+            const pct=ctx.dataset.label!=="Total"&&series[ctx.dataIndex].adSpend>0
+              ?` (${Math.round(v/series[ctx.dataIndex].adSpend*100)}%)`:"";
+            return`${ctx.dataset.label}: ${fmtRevShort(v)}${pct}`;
+          },
         }}
       },
       scales:{
-        y:{beginAtZero:true,grid:{color:"#F1F5F9"},ticks:{callback:v=>fmtRevShort(v),font:{size:10}},title:{display:true,text:"Ad Spend",font:{size:11},color:"#94A3B8"}},
+        y:{beginAtZero:true,grid:{color:"#F1F5F9"},
+           ticks:{callback:v=>fmtRevShort(v),font:{size:10},maxTicksLimit:6},
+           title:{display:true,text:"Ad Spend",font:{size:11},color:"#94A3B8"}},
         x:{grid:{display:false},ticks:{font:{size:10}}}
       }
     }
@@ -1228,34 +1255,72 @@ function byChannelUnitEconomics(){
 function renderUnitEconomics(){
   const data=byChannelUnitEconomics();
   if(!data.length){if(STATE.charts["chart-unit-economics"])STATE.charts["chart-unit-economics"].destroy();return;}
+  // Sort by ARPU desc for ranked view
+  data.sort((a,b)=>b.arpu-a.arpu);
   const labels=data.map(d=>d.ch);
   const chColors=data.map(d=>palette[d.ch]||"#94A3B8");
-  const marginPtColors=data.map(d=>d.margin>=0?"#10B981":"#EF4444");
-  chart("chart-unit-economics",{type:"bar",data:{labels,datasets:[
-    {type:"bar",label:"ARPU",data:data.map(d=>d.arpu),backgroundColor:chColors.map(c=>c+"BB"),borderColor:chColors,borderWidth:1.5,borderRadius:5,yAxisID:"yArpu",
-      datalabels:{anchor:"end",align:"end",color:chColors,font:{size:9,weight:"bold"},formatter:v=>v>0?fmtRevShort(v):""}},
-    {type:"bar",label:"CAC",data:data.map(d=>d.cac),backgroundColor:"rgba(239,68,68,.65)",borderColor:"#EF4444",borderWidth:1.5,borderRadius:5,yAxisID:"yCac",
-      datalabels:{anchor:"end",align:"end",color:"#DC2626",font:{size:9,weight:"bold"},formatter:v=>v>0?fmtRevShort(v):""}},
-    {type:"line",label:"Margin (ARPU−CAC)",data:data.map(d=>d.margin),borderColor:"#10B981",backgroundColor:"rgba(16,185,129,.12)",pointBackgroundColor:marginPtColors,pointBorderColor:marginPtColors,pointRadius:6,tension:.3,borderWidth:2.5,fill:false,yAxisID:"yArpu",
-      datalabels:{align:"top",color:marginPtColors,font:{size:10,weight:"bold"},formatter:v=>fmtRevShort(v)}},
-  ]},options:{
-    responsive:true,maintainAspectRatio:false,
-    plugins:{legend:{position:"bottom",labels:{boxWidth:10,font:{size:11}}},datalabels:{},
-      tooltip:{callbacks:{
-        label:ctx=>{const i=ctx.dataIndex;const d=data[i];
-          if(ctx.dataset.label==="ARPU")return`ARPU: ${fmtRevShort(d.arpu)} (${d.ns} students)`;
-          if(ctx.dataset.label==="CAC")return`CAC: ${fmtRevShort(d.cac)}`;
-          const sign=d.margin>=0?"✅ ":"⚠️ ";return`${sign}Margin: ${fmtRevShort(d.margin)}`;
+
+  chart("chart-unit-economics",{
+    type:"bar",
+    data:{labels,datasets:[
+      {
+        label:"ARPU",
+        data:data.map(d=>d.arpu),
+        backgroundColor:chColors.map(c=>c+"CC"),
+        borderColor:chColors,
+        borderWidth:1.5,
+        borderRadius:4,
+        borderSkipped:false,
+        datalabels:{anchor:"end",align:"end",color:chColors,font:{size:10,weight:"bold"},formatter:v=>v>0?fmtRevShort(v):""}
+      },
+      {
+        label:"CAC",
+        data:data.map(d=>d.cac),
+        backgroundColor:"rgba(239,68,68,.20)",
+        borderColor:"#EF4444",
+        borderWidth:1.5,
+        borderRadius:4,
+        borderSkipped:false,
+        datalabels:{anchor:"end",align:"end",color:"#DC2626",font:{size:10,weight:"bold"},formatter:v=>v>0?fmtRevShort(v):""}
+      },
+    ]},
+    options:{
+      indexAxis:"y",
+      responsive:true,maintainAspectRatio:false,
+      interaction:{mode:"index",intersect:false},
+      plugins:{
+        legend:{position:"bottom",labels:{boxWidth:10,font:{size:11}}},
+        datalabels:{},
+        tooltip:{callbacks:{
+          label:ctx=>{
+            const i=ctx.dataIndex; const d=data[i];
+            if(ctx.dataset.label==="ARPU")return`ARPU: ${fmtRevShort(d.arpu)} · ${d.ns} students`;
+            if(ctx.dataset.label==="CAC") return`CAC: ${fmtRevShort(d.cac)} · paid ch. only`;
+            return ctx.dataset.label+": "+fmtRevShort(ctx.parsed.x);
+          },
+          afterBody:ctx=>{
+            if(!ctx.length)return[];
+            const d=data[ctx[0].dataIndex];
+            const margin=d.arpu-d.cac;
+            const ratio=d.cac>0?(d.arpu/d.cac):null;
+            const flag=ratio===null?"–":ratio>=3?"🟢 Excellent":ratio>=2?"🟡 Acceptable":ratio>=1?"🟠 Thin":"🔴 Negative";
+            return[`Margin: ${fmtRevShort(margin)}  |  ARPU/CAC: ${ratio?ratio.toFixed(1)+"x":"–"}  ${flag}`];
+          }
+        }}
+      },
+      scales:{
+        x:{
+          grid:{color:"#F1F5F9"},
+          ticks:{callback:v=>fmtRevShort(v),font:{size:10},maxTicksLimit:6},
+          title:{display:true,text:"Value per Student (Rp)",font:{size:11},color:"#94A3B8"}
         },
-        afterBody:ctx=>{if(!ctx.length)return[];const d=data[ctx[0].dataIndex];const ratio=d.cac>0?d.arpu/d.cac:null;if(!ratio)return[];const flag=ratio>=3?"🟢 Excellent":ratio>=2?"🟡 Acceptable":ratio>=1?"🟠 Thin":"🔴 Negative";return[`ARPU/CAC: ${ratio.toFixed(2)}x — ${flag}`];}
-      }}
-    },
-    scales:{
-      yArpu:{type:"linear",position:"left",grid:{color:"#F1F5F9"},ticks:{callback:v=>fmtRevShort(v),font:{size:10}},title:{display:true,text:"ARPU / Margin (Rp)",font:{size:11},color:"#6366F1"}},
-      yCac:{type:"linear",position:"right",grid:{display:false},ticks:{callback:v=>fmtRevShort(v),font:{size:10}},title:{display:true,text:"CAC (Rp)",font:{size:11},color:"#EF4444"}},
-      x:{grid:{display:false},ticks:{font:{size:11,weight:"600"}}}
+        y:{
+          grid:{display:false},
+          ticks:{font:{size:11,weight:"600"}}
+        }
+      }
     }
-  }});
+  });
 }
 
 function renderROAS(){
@@ -1324,9 +1389,45 @@ function renderQuadrant(){
 }
 
 function renderDonut(){
-  const data=byChannelNewStudents();const labels=Object.keys(data);
-  chart("chart-donut",{type:"doughnut",data:{labels,datasets:[{data:labels.map(l=>data[l]),backgroundColor:labels.map(l=>palette[l]||"#94A3B8"),borderWidth:2,borderColor:"#fff"}]},
-    options:{responsive:true,maintainAspectRatio:false,cutout:"62%",plugins:{legend:{position:"bottom",labels:{boxWidth:10,font:{size:11}}},datalabels:{color:'#ffffff',font:{weight:'bold',size:11},formatter:(v,ctx)=>{if(v===0)return'';return Math.round(v*100/ctx.chart._metasets[ctx.datasetIndex].total)+"%";}}}}});
+  const rawData=byChannelNewStudents();
+  // Only show channels with actual NS — filter zeroes
+  const entries=Object.entries(rawData).filter(([,v])=>v>0);
+  if(!entries.length){
+    if(STATE.charts["chart-donut"])STATE.charts["chart-donut"].destroy();
+    return;
+  }
+  const labels=entries.map(([k])=>k);
+  const values=entries.map(([,v])=>v);
+  const total=values.reduce((s,v)=>s+v,0);
+  chart("chart-donut",{
+    type:"doughnut",
+    data:{
+      labels,
+      datasets:[{
+        data:values,
+        backgroundColor:labels.map(l=>palette[l]||"#94A3B8"),
+        borderWidth:2,
+        borderColor:"#fff"
+      }]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,cutout:"60%",
+      plugins:{
+        legend:{position:"bottom",labels:{boxWidth:10,font:{size:11}}},
+        datalabels:{
+          color:'#ffffff',
+          font:{weight:'bold',size:11},
+          formatter:(v)=>{
+            const p=Math.round(v/total*100);
+            return p>=5?p+"%":"";
+          }
+        },
+        tooltip:{callbacks:{
+          label:ctx=>`${ctx.label}: ${ctx.parsed.toLocaleString()} (${Math.round(ctx.parsed/total*100)}%)`
+        }}
+      }
+    }
+  });
 }
 
 function renderCenterPerf(){
@@ -1339,11 +1440,61 @@ function renderCenterPerf(){
       const nsB=Object.values(grid[b]).reduce((s,v)=>s+v.ns,0);
       return nsB-nsA;
     });
-  const datasets=CONFIG.CHANNELS.map(ch=>({
-    label:ch,backgroundColor:palette[ch]||"#94A3B8",data:centers.map(c=>grid[c][ch].ns),stack:"a",
-    datalabels:{color:'#ffffff',font:{size:9,weight:'bold'},formatter:v=>Math.round(v)>0?Math.round(v).toLocaleString():''}
-  }));
-  chart("chart-center",{type:"bar",data:{labels:centers,datasets},options:{indexAxis:"y",responsive:true,maintainAspectRatio:false,plugins:{legend:{position:"bottom",labels:{boxWidth:10,font:{size:10}}},datalabels:{}},scales:{x:{stacked:true,grid:{color:"#F1F5F9"},ticks:{font:{size:10}}},y:{stacked:true,grid:{display:false},ticks:{font:{size:10}}}}}});
+  // Compute totals for each center (for end-of-bar label)
+  const totals=centers.map(c=>Object.values(grid[c]).reduce((s,v)=>s+v.ns,0));
+
+  const datasets=CONFIG.CHANNELS.map((ch,chIdx)=>{
+    const isLast=chIdx===CONFIG.CHANNELS.length-1;
+    return {
+      label:ch,
+      backgroundColor:palette[ch]||"#94A3B8",
+      data:centers.map(c=>grid[c][ch].ns),
+      stack:"a",
+      // Show segment label only for non-zero values
+      datalabels:{
+        color:'#ffffff',
+        font:{size:8,weight:'bold'},
+        formatter:v=>Math.round(v)>=5?Math.round(v):'',
+        // On the last channel segment, also show the total after the bar
+        ...(isLast ? {
+          anchor:'end', align:'right', offset:4,
+          color:'#334155', font:{size:10,weight:'700'},
+          formatter:(_,ctx)=>{
+            const total=totals[ctx.dataIndex];
+            return total>0?total.toLocaleString():'';
+          }
+        } : {})
+      }
+    };
+  });
+
+  chart("chart-center",{
+    type:"bar",
+    data:{labels:centers,datasets},
+    options:{
+      indexAxis:"y",
+      responsive:true,
+      maintainAspectRatio:false,
+      layout:{padding:{right:48}}, // room for total labels
+      plugins:{
+        legend:{position:"bottom",labels:{boxWidth:10,font:{size:10}}},
+        datalabels:{},
+        tooltip:{callbacks:{
+          title:ctx=>ctx[0].label,
+          label:ctx=>`${ctx.dataset.label}: ${Math.round(ctx.parsed.x).toLocaleString()}`,
+          afterBody:ctx=>{
+            const c=centers[ctx[0].dataIndex];
+            const total=totals[ctx[0].dataIndex];
+            return[`Total NS: ${total.toLocaleString()}`];
+          }
+        }}
+      },
+      scales:{
+        x:{stacked:true,grid:{color:"#F1F5F9"},ticks:{font:{size:10}},border:{display:false}},
+        y:{stacked:true,grid:{display:false},ticks:{font:{size:10,weight:"600"}},border:{display:false}}
+      }
+    }
+  });
 }
 
 
