@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Sparks Preschool — Growth Dashboard</title>
+<title>Funnel Executive Dashboard</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
@@ -17,25 +17,25 @@ html,body{background:var(--bg);color:var(--ink);font-family:'DM Sans',ui-sans-se
 .mono{font-family:'DM Mono',monospace}
 
 /* ── Sticky filter bar ─────────────────────────────────────────── */
-#filter-bar{position:sticky;top:0;z-index:200;background:#fff;border-bottom:1px solid var(--line);box-shadow:0 2px 12px rgba(0,0,0,.06);transition:padding .2s ease;}
-#filter-bar.expanded{padding:12px 24px 14px;}
-#filter-bar.collapsed{padding:6px 24px;}
+#filter-bar{position:sticky;top:0;z-index:200;background:#0F172A;border-bottom:1px solid #1E293B;box-shadow:0 4px 20px rgba(0,0,0,.15);transition:padding .2s ease;color:#F8FAFC}
+#filter-bar.expanded{padding:16px 24px 20px;}
+#filter-bar.collapsed{padding:8px 24px;}
 #filter-bar.collapsed #filter-full{display:none;}
 #filter-bar.collapsed #filter-compact{display:flex;}
 #filter-bar.expanded  #filter-compact{display:none;}
 #filter-bar.expanded  #filter-full{display:block;}
 #filter-compact{align-items:center;gap:10px;flex-wrap:wrap}
-.compact-badge{font-size:11px;font-weight:600;padding:3px 9px;border-radius:99px;background:#F1F5F9;color:#334155;cursor:pointer}
-.compact-badge:hover{background:#E2E8F0}
-#filter-toggle{font-size:11px;font-weight:700;padding:4px 10px;border-radius:8px;border:1px solid var(--line);color:#64748B;cursor:pointer;background:#fff;display:flex;align-items:center;gap:4px;white-space:nowrap}
+.compact-badge{font-size:11px;font-weight:600;padding:4px 10px;border-radius:99px;background:#1E293B;color:#CBD5E1;cursor:pointer}
+.compact-badge:hover{background:#334155}
+#filter-toggle{font-size:11px;font-weight:700;padding:5px 12px;border-radius:8px;border:1px solid #334155;color:#E2E8F0;cursor:pointer;background:#1E293B;display:flex;align-items:center;gap:4px;white-space:nowrap}
 
 /* ── Pills ─────────────────────────────────────────────────────── */
 .pill{cursor:pointer;user-select:none;transition:all .15s ease}
 .pill:hover{transform:translateY(-1px)}
-.pill.on{background:#0F172A;color:#fff;border-color:#0F172A}
-.pill.off{background:#fff;color:#0F172A;border-color:#E2E8F0}
+.pill.on{background:#6366F1;color:#fff;border-color:#6366F1}
+.pill.off{background:#1E293B;color:#94A3B8;border-color:#334155}
 .pill-accent.on{background:linear-gradient(135deg,#6366F1,#8B5CF6);color:#fff;border-color:transparent}
-.period-sep{display:inline-flex;align-items:center;font-size:10px;font-weight:700;color:#94A3B8;letter-spacing:.06em;padding:0 4px;user-select:none}
+.period-sep{display:inline-flex;align-items:center;font-size:10px;font-weight:700;color:#64748B;letter-spacing:.06em;padding:0 4px;user-select:none}
 
 /* ── Cards ─────────────────────────────────────────────────────── */
 .card{background:var(--card);border:1px solid var(--line);border-radius:14px}
@@ -87,8 +87,8 @@ details>summary::-webkit-details-marker{display:none}
 .funnel-arrow{font-size:18px;color:#CBD5E1;line-height:1}
 
 /* ── Trend chart toggle ──────────────────────────────────────── */
-.granularity-btn{font-size:11px;font-weight:600;padding:4px 12px;border-radius:7px;border:1px solid var(--line);cursor:pointer;transition:all .15s;background:#fff;color:#64748B}
-.granularity-btn.active{background:#0F172A;color:#fff;border-color:#0F172A}
+.granularity-btn{font-size:11px;font-weight:600;padding:4px 12px;border-radius:7px;border:1px solid #334155;cursor:pointer;transition:all .15s;background:#1E293B;color:#94A3B8}
+.granularity-btn.active{background:#6366F1;color:#fff;border-color:#6366F1}
 
 /* ── Heatmap ─────────────────────────────────────────────────── */
 .hm-toggle-btn{font-size:11px;font-weight:600;padding:4px 10px;border-radius:8px;border:1px solid var(--line);cursor:pointer;transition:all .15s}
@@ -161,11 +161,10 @@ const CONFIG = {
 };
 </script>
 
-<!-- HEADER -->
 <header style="background:linear-gradient(135deg,#0F172A 0%,#1E293B 100%);padding:18px 24px 16px">
   <div class="flex items-center justify-between flex-wrap gap-3">
     <div>
-      <h1 class="text-2xl font-bold tracking-tight text-white">Sparks Preschool</h1>
+      <h1 class="text-2xl font-bold tracking-tight text-white">Funnel Executive Dashboard</h1>
       <p class="text-sm" style="color:#94A3B8">Growth Executive Dashboard · Source: <span style="color:#818CF8;font-weight:600">Full OBT</span> · <span id="last-updated" style="color:#F59E0B">loading…</span></p>
     </div>
     <div class="flex items-center gap-2">
@@ -175,7 +174,6 @@ const CONFIG = {
   </div>
 </header>
 
-<!-- STICKY FILTER BAR -->
 <div id="filter-bar" class="expanded">
   <div id="filter-compact">
     <button id="filter-toggle" onclick="toggleFilter()">▼ Filters</button>
@@ -191,10 +189,9 @@ const CONFIG = {
   <div id="filter-full">
     <div class="flex items-center justify-between mb-2">
       <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Filters</span>
-      <button onclick="toggleFilter()" class="tab-btn" style="background:#F1F5F9;color:#64748B;font-size:11px;padding:3px 10px">▲ Collapse</button>
+      <button onclick="toggleFilter()" class="tab-btn" style="background:#1E293B;color:#CBD5E1;font-size:11px;padding:3px 10px;border:1px solid #334155">▲ Collapse</button>
     </div>
     <div class="space-y-2.5">
-      <!-- Period + Granularity on same row -->
       <div class="flex items-start gap-3 flex-wrap">
         <div class="text-xs font-semibold uppercase tracking-wider text-slate-500 pt-1.5 w-16 shrink-0">Period</div>
         <div class="flex flex-wrap items-center gap-1.5">
@@ -206,14 +203,13 @@ const CONFIG = {
           <span class="period-sep mx-1">│</span>
           <div id="period-pills-other" class="flex flex-wrap gap-1.5"></div>
           <div id="custom-range" class="hidden flex items-center gap-2 ml-1">
-            <input id="date-start" type="date" class="border border-slate-200 rounded-md px-2 py-1 text-xs" />
+            <input id="date-start" type="date" class="border border-slate-200 rounded-md px-2 py-1 text-xs" style="color:#0F172A" />
             <span class="text-slate-400 text-xs">→</span>
-            <input id="date-end" type="date" class="border border-slate-200 rounded-md px-2 py-1 text-xs" />
+            <input id="date-end" type="date" class="border border-slate-200 rounded-md px-2 py-1 text-xs" style="color:#0F172A" />
             <button id="custom-apply" class="tab-btn bg-slate-900 text-white text-xs py-1">Apply</button>
           </div>
         </div>
       </div>
-      <!-- Granularity row — controls all time-series charts -->
       <div class="flex items-start gap-3 flex-wrap">
         <div class="text-xs font-semibold uppercase tracking-wider text-slate-500 pt-1.5 w-16 shrink-0">View</div>
         <div class="flex items-center gap-1.5">
@@ -234,16 +230,13 @@ const CONFIG = {
   </div>
 </div>
 
-<!-- MAIN CONTENT -->
 <div id="main-content" class="px-6 pt-4 space-y-4 pb-12">
 
-  <!-- KPI Grid -->
   <div>
     <div class="section-label">Key Performance Indicators</div>
     <div class="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-7 gap-2" id="kpi-grid"></div>
   </div>
 
-  <!-- Target Attainment -->
   <div>
     <div class="section-label">Target Attainment — Actual vs Target</div>
     <div class="card p-4">
@@ -251,7 +244,6 @@ const CONFIG = {
     </div>
   </div>
 
-  <!-- Funnel Waterfall -->
   <div>
     <div class="section-label">Conversion Funnel — Stage Waterfall</div>
     <div class="card p-4">
@@ -265,7 +257,6 @@ const CONFIG = {
 
   <div class="grid grid-cols-12 gap-4">
 
-    <!-- Funnel Trend -->
     <div class="card p-4 col-span-12">
       <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
         <div>
@@ -276,7 +267,6 @@ const CONFIG = {
       <div class="relative h-80"><canvas id="chart-trend"></canvas></div>
     </div>
 
-    <!-- Funnel conversion charts -->
     <div class="card p-4 col-span-12">
       <div class="flex items-center justify-between mb-2 flex-wrap gap-2">
         <h3 class="font-semibold">Lead → Booking Conversion <span class="text-xs font-normal text-slate-400">(Booking_BD ÷ Leads)</span></h3>
@@ -301,7 +291,6 @@ const CONFIG = {
       <div class="relative h-72"><canvas id="chart-s2n"></canvas></div>
     </div>
 
-    <!-- Conversion Rate Trends -->
     <div class="card p-4 col-span-12">
       <div class="flex items-center justify-between mb-2 flex-wrap gap-2">
         <h3 class="font-semibold">Conversion Rate Trends</h3>
@@ -310,7 +299,6 @@ const CONFIG = {
       <div class="relative h-64"><canvas id="chart-conv-rates"></canvas></div>
     </div>
 
-    <!-- Acquisition Costs -->
     <div class="card p-4 col-span-12">
       <div class="flex items-center justify-between mb-2">
         <h3 class="font-semibold">Acquisition Costs (CPL, CPB, CAC)</h3>
@@ -319,9 +307,8 @@ const CONFIG = {
       <div class="relative h-72"><canvas id="chart-costs"></canvas></div>
     </div>
 
-    <!-- Strategic section -->
     <div class="col-span-12 pt-2">
-      <div class="section-label" style="color:#6366F1;border-bottom:2px solid #E0E7FF;padding-bottom:6px">💡 Strategic Financial Analysis</div>
+      <div class="section-label" style="color:#6366F1;border-bottom:2px solid #E0E7FF;padding-bottom:6px">Strategic Financial Analysis</div>
     </div>
 
     <div class="card p-4 col-span-12">
@@ -365,7 +352,6 @@ const CONFIG = {
       <div class="relative h-72"><canvas id="chart-donut"></canvas></div>
     </div>
 
-    <!-- Ads Spend Area Chart — NEW -->
     <div class="card p-4 col-span-12">
       <div class="flex items-center justify-between mb-2 flex-wrap gap-2">
         <div>
@@ -376,7 +362,6 @@ const CONFIG = {
       <div class="relative h-64"><canvas id="chart-ads-spend"></canvas></div>
     </div>
 
-    <!-- Center Performance + NS by Channel side by side -->
     <div class="card p-4 col-span-12 lg:col-span-8">
       <div class="flex items-center justify-between mb-2">
         <h3 class="font-semibold">Center Performance</h3>
@@ -437,7 +422,6 @@ const CONFIG = {
     </div>
   </div>
 
-  <!-- League Table -->
   <div>
     <div class="section-label">Center League Table</div>
     <div class="card p-4 overflow-hidden">
@@ -478,8 +462,8 @@ Chart.register(customBreakevenPlugin);
 
 const $ = id => document.getElementById(id);
 const fmt      = n => n==null||isNaN(n) ? "–" : Math.round(n).toLocaleString();
-const fmtPct1  = n => n==null||isNaN(n) ? "–" : (n*100).toFixed(1)+"%";
-const fmtRevShort = v => v==null||isNaN(v)||v===0 ? "–" : v>=1e9 ? "Rp"+(v/1e9).toFixed(1)+"B" : v>=1e6 ? "Rp"+Math.round(v/1e6)+"M" : v>=1e3 ? "Rp"+Math.round(v/1e3)+"K" : "Rp"+Math.round(v);
+const fmtPct1  = n => n==null||isNaN(n) ? "–" : Math.round(n*100)+"%";
+const fmtRevShort = v => v==null||isNaN(v)||v===0 ? "–" : v>=1e9 ? "Rp"+(v/1e9).toFixed(1)+"B" : v>=1e6 ? "Rp"+(v/1e6).toFixed(1)+"M" : v>=1e3 ? "Rp"+Math.round(v/1e3)+"K" : "Rp"+Math.round(v);
 
 const palette = {Meta:"#1877F2",Google:"#EA4335",TikTok:"#111827","Cross-Sell":"#8B5CF6",Referral:"#10B981",Offline:"#F59E0B",Others:"#94A3B8"};
 const DOW_LABELS = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
@@ -524,12 +508,8 @@ function updateCompactBadges(){
   const allCh=f.channels.size===CONFIG.CHANNELS.length;
   $("compact-channels").textContent=allCh?"All":[...f.channels].join(", ");
 }
-// Filter stays always accessible — no auto-collapse on scroll
 
 // ── Date helpers ──────────────────────────────────────────────────────────────
-// All date bucketing uses LOCAL time (Jakarta WIB = UTC+7 when browser TZ is set,
-// or matches the server TZ). parseDate already normalises to local midnight so
-// all comparisons are consistent.
 function toLocalMidnight(d){if(!d||isNaN(d))return null;return new Date(d.getFullYear(),d.getMonth(),d.getDate(),0,0,0,0);}
 function parseDate(v){
   if(v==null||v==="")return null;
@@ -547,25 +527,19 @@ function parseDate(v){
   return null;
 }
 
-// startOfWeek: always Monday, using LOCAL date fields (no UTC conversion)
 function startOfWeek(d){
-  // getDay(): 0=Sun,1=Mon,...,6=Sat → offset so Mon=0
   const dow=d.getDay()===0?6:d.getDay()-1; // Mon=0 … Sun=6
   return new Date(d.getFullYear(),d.getMonth(),d.getDate()-dow,0,0,0,0);
 }
-// Week key: "YYYY-MM-DD" of the Monday, built from local fields (no UTC drift)
 function fmtWeek(d){
   const mon=startOfWeek(d);
   return mon.getFullYear()+"-"+String(mon.getMonth()+1).padStart(2,"0")+"-"+String(mon.getDate()).padStart(2,"0");
 }
-// Week label: "W1", "W2" … ISO week number derived from the Monday date
 function fmtWkLabel(isoMonday){
-  // isoMonday is "YYYY-MM-DD" of Monday (local), parse as local
   const[y,mo,dy]=isoMonday.split("-").map(Number);
   const mon=new Date(y,mo-1,dy,0,0,0,0);
-  // ISO week: Thursday of same week
   const thu=new Date(mon.getFullYear(),mon.getMonth(),mon.getDate()+3,0,0,0,0);
-  const jan4=new Date(thu.getFullYear(),0,4,0,0,0,0); // Jan 4 is always in W1
+  const jan4=new Date(thu.getFullYear(),0,4,0,0,0,0); 
   const startOfW1=startOfWeek(jan4);
   const weekNum=Math.round((thu-startOfW1)/604800000)+1;
   return "W"+weekNum;
@@ -690,7 +664,7 @@ function periodRange(){
   const end=new Date(now.getFullYear(),now.getMonth(),now.getDate(),23,59,59,999);
   if(f.period==="L1W")return[daysAgo(7),end];
   if(f.period==="L2W")return[daysAgo(14),end];
-  if(f.period==="L4W")return[daysAgo(28),end];
+  if(f.period==="L4W")return[daysAgo(21),end];
   if(f.period==="L8W")return[daysAgo(56),end];
   if(f.period==="L1M")return[daysAgo(30),end];
   if(f.period==="L3M")return[daysAgo(90),end];
@@ -699,7 +673,6 @@ function periodRange(){
   return[new Date(2000,0,1,0,0,0,0),end];
 }
 
-// Determine comparison label based on active period
 function compLabel(){
   const p=STATE.filters.period;
   if(["L1W","L2W","L4W","L8W"].includes(p))return"vs prev week";
@@ -720,13 +693,8 @@ function inFilter(row,start,end){
   return true;
 }
 
-// bookingBD always for counting; bookingTD for show-up CVR denominator
-function bookingBDOf(r){return r.bookingBD;}
-function bookingTDOf(r){return r.bookingTD;}
-
 function aggregateFor(start,end){
   let leads=0,bookingBD=0,bookingTD=0,showUps=0,newStudents=0,adSpend=0,revenue=0,leadsT=0,bookingT=0,showUpsT=0,newStudentsT=0;
-  // CAC: only paid-channel NS (Meta/Google/TikTok)
   let paidNS=0;
   const PAID_CH=new Set(["Meta","Google","TikTok"]);
   for(const r of STATE.rows){
@@ -736,14 +704,12 @@ function aggregateFor(start,end){
     leadsT+=r.leadsT;bookingT+=r.bookingT;showUpsT+=r.showUpsT;newStudentsT+=r.newStudentsT;
     if(PAID_CH.has(r.channel))paidNS+=r.newStudents;
   }
-  // Booking CVR = BD/Leads; Show-up CVR = SU/BookingTD
   const l2b=leads>0?bookingBD/leads:null;
   const b2s=bookingTD>0?showUps/bookingTD:null;
   const s2n=showUps>0?newStudents/showUps:null;
   const l2n=leads>0?newStudents/leads:null;
   const cpl=leads>0?adSpend/leads:null;
   const cpb=bookingBD>0?adSpend/bookingBD:null;
-  // CAC = total paid ad spend / new students from paid channels only
   const cac=paidNS>0?adSpend/paidNS:null;
   const aov=newStudents>0?revenue/newStudents:null;
   return{leads,bookingBD,bookingTD,showUps,newStudents,adSpend,revenue,aov,leadsT,bookingT,showUpsT,newStudentsT,l2b,b2s,s2n,l2n,cpl,cpb,cac,paidNS};
@@ -879,13 +845,12 @@ function makePill(label,on,accent,onclick,dotColor){
   b.appendChild(document.createTextNode(label));b.onclick=onclick;return b;
 }
 
-// ── KPI cards — Superset style with sparkline + comparison ───────────────────
+// ── KPI cards ────────────────────────────────────────────────────────────────
 function renderKPIs(agg){
   const[ps,pe]=prevPeriodRange();
   const prev=aggregateFor(ps,pe);
   const cLabel=compLabel();
 
-  // Delta badge
   const dl=(cur,prv,invert=false)=>{
     const d=prv>0?((cur-prv)/prv):null;if(d===null)return'';
     const up=invert?(d<0):(d>0);const sign=d>0?"+":"";
@@ -906,7 +871,7 @@ function renderKPIs(agg){
     {label:"CAC",         val:agg.cac?fmtRevShort(agg.cac):"–", sub:"cost / new student",color:"#F43F5E", delta:dl(agg.cac??0,prev.cac??0,true),     primary:true},
     {label:"ARPU",        val:fmtRevShort(agg.aov),     sub:"rev / new student",         color:"#8B5CF6", delta:dl(agg.aov??0,prev.aov??0),          primary:true},
     {label:"Paid CVR",    val:fmtPct1(agg.s2n),         sub:"show-up → new student",     color:"#10B981", delta:dl(agg.s2n??0,prev.s2n??0),          primary:true},
-    {label:"Total Leads", val:fmt(agg.leads),            sub:"inquiries",                 color:"#6366F1", delta:dl(agg.leads,prev.leads),            primary:true, pacing:pBar(agg.leads,agg.leadsT)},
+    {label:"Total Leads", val:fmt(agg.leads),            sub:"inquiries",                color:"#6366F1", delta:dl(agg.leads,prev.leads),            primary:true, pacing:pBar(agg.leads,agg.leadsT)},
     {divider:true,label:"Funnel Metrics"},
     {label:"Bookings (BD)", val:fmt(agg.bookingBD), sub:fmtPct1(agg.l2b)+" of leads",   color:"#06B6D4", delta:dl(agg.bookingBD,prev.bookingBD),    pacing:pBar(agg.bookingBD,agg.bookingT)},
     {label:"Show-ups",    val:fmt(agg.showUps),          sub:fmtPct1(agg.b2s)+" of book TD",color:"#10B981",delta:dl(agg.showUps,prev.showUps),      pacing:pBar(agg.showUps,agg.showUpsT)},
@@ -934,10 +899,10 @@ function renderKPIs(agg){
 // ── Pacing section ────────────────────────────────────────────────────────────
 function renderPacing(agg){
   const metrics=[
-    {label:"Leads",actual:agg.leads,target:agg.leadsT,icon:"📥",color:"#6366F1"},
-    {label:"Bookings",actual:agg.bookingBD,target:agg.bookingT,icon:"📅",color:"#06B6D4"},
-    {label:"Show-ups",actual:agg.showUps,target:agg.showUpsT,icon:"🎓",color:"#10B981"},
-    {label:"New Students",actual:agg.newStudents,target:agg.newStudentsT,icon:"⭐",color:"#F59E0B"},
+    {label:"Leads",actual:agg.leads,target:agg.leadsT,icon:"",color:"#6366F1"},
+    {label:"Bookings",actual:agg.bookingBD,target:agg.bookingT,icon:"",color:"#06B6D4"},
+    {label:"Show-ups",actual:agg.showUps,target:agg.showUpsT,icon:"",color:"#10B981"},
+    {label:"New Students",actual:agg.newStudents,target:agg.newStudentsT,icon:"",color:"#F59E0B"},
   ];
   $("pacing-grid").innerHTML=metrics.map(m=>{
     if(!m.target)return`<div class="card-inset p-3"><div class="text-xs text-slate-400">${m.icon} ${m.label}</div><div class="text-sm font-semibold mt-1 text-slate-400">No target data</div></div>`;
@@ -966,12 +931,12 @@ function renderPacing(agg){
 // ── Funnel Waterfall ──────────────────────────────────────────────────────────
 function renderFunnelWaterfall(agg){
   const stages=[
-    {label:"Leads",         val:agg.leads,        color:"#6366F1", icon:"📥"},
-    {label:"Bookings (BD)", val:agg.bookingBD,    color:"#06B6D4", icon:"📅",
+    {label:"Leads",         val:agg.leads,        color:"#6366F1", icon:""},
+    {label:"Bookings (BD)", val:agg.bookingBD,    color:"#06B6D4", icon:"",
      cvrNum:agg.bookingBD,  cvrDen:agg.leads,     cvrLabel:"BD / Leads"},
-    {label:"Show-ups",      val:agg.showUps,      color:"#10B981", icon:"🎓",
+    {label:"Show-ups",      val:agg.showUps,      color:"#10B981", icon:"",
      cvrNum:agg.showUps,    cvrDen:agg.bookingTD, cvrLabel:"SU / Book TD"},
-    {label:"New Students",  val:agg.newStudents,  color:"#F59E0B", icon:"⭐",
+    {label:"New Students",  val:agg.newStudents,  color:"#F59E0B", icon:"",
      cvrNum:agg.newStudents,cvrDen:agg.showUps,   cvrLabel:"NS / SU"},
   ];
   const maxVal=stages[0].val||1;
@@ -1018,11 +983,9 @@ function chart(id,cfg){
   STATE.charts[id]=new Chart($(id).getContext("2d"),cfg);
 }
 
-// Funnel Trend — weekly/monthly toggle, rich tooltip, data labels on points
 function renderTrend(){
   const series=getTimeSeries();
   const labels=series.map(s=>getLabel(s));
-  // Show data labels only when series is short enough (≤16 points) to avoid crowding
   const showLabels=series.length<=16;
   const dlCfg=(color)=>({
     display: showLabels,
@@ -1084,7 +1047,6 @@ function renderTrend(){
   });
 }
 
-// Funnel conversion charts — all respect GRANULARITY toggle
 function renderFunnelChart(id, topKey, bottomKey, topLabel, bottomLabel, color, convTopKey, convBotKey){
   const series=getTimeSeries();
   const labels=series.map(s=>getLabel(s));
@@ -1094,7 +1056,8 @@ function renderFunnelChart(id, topKey, bottomKey, topLabel, bottomLabel, color, 
   });
   chart(id,{
     type:"bar",data:{labels,datasets:[
-      {type:"bar",label:topLabel,   data:series.map(s=>s[topKey]),   backgroundColor:color+"33",borderRadius:3,yAxisID:"y",datalabels:{display:false}},
+      {type:"bar",label:topLabel,   data:series.map(s=>s[topKey]),   backgroundColor:color+"33",borderRadius:3,yAxisID:"y",
+        datalabels:{display:true,align:'center',color:color,font:{size:9,weight:'bold'},formatter:v=>Math.round(v)>0?Math.round(v).toLocaleString():''}},
       {type:"bar",label:bottomLabel,data:series.map(s=>s[bottomKey]),backgroundColor:color,    borderRadius:3,yAxisID:"y",
         datalabels:{align:'center',color:'#ffffff',font:{size:9,weight:'bold'},formatter:v=>Math.round(v)>0?Math.round(v).toLocaleString():''}},
       {type:"line",label:"CVR %",   data:conv,borderColor:"#0F172A",backgroundColor:"#0F172A",tension:.3,yAxisID:"y1",pointRadius:3,borderWidth:2,
@@ -1122,14 +1085,13 @@ function renderFunnelChart(id, topKey, bottomKey, topLabel, bottomLabel, color, 
 
 function renderConvRates(){
   const series=getTimeSeries();const labels=series.map(s=>getLabel(s));
-  // Booking CVR = BD/Leads; Show-up CVR = SU/BookingTD; Paid CVR = NS/SU
   const l2b=series.map(s=>s.leads>0?+(s.bookingBD/s.leads*100).toFixed(1):0);
   const b2s=series.map(s=>s.bookingTD>0?+(s.showUps/s.bookingTD*100).toFixed(1):0);
   const s2n=series.map(s=>s.showUps>0?+(s.newStudents/s.showUps*100).toFixed(1):0);
   chart("chart-conv-rates",{type:"line",data:{labels,datasets:[
-    {label:"Booking CVR (BD/Leads)",  data:l2b,borderColor:"#06B6D4",backgroundColor:"rgba(6,182,212,.08)",fill:true,tension:.35,pointRadius:3,borderWidth:2,datalabels:{align:'top',color:"#0891B2",font:{size:9,weight:'bold'},formatter:v=>v>0?v+'%':''}},
-    {label:"Show-up CVR (SU/Book TD)",data:b2s,borderColor:"#10B981",backgroundColor:"rgba(16,185,129,.08)",fill:true,tension:.35,pointRadius:3,borderWidth:2,datalabels:{align:'top',color:"#059669",font:{size:9,weight:'bold'},formatter:v=>v>0?v+'%':''}},
-    {label:"Paid NS CVR (NS/SU)",     data:s2n,borderColor:"#F59E0B",backgroundColor:"rgba(245,158,11,.08)",fill:true,tension:.35,pointRadius:3,borderWidth:2,datalabels:{align:'top',color:"#D97706",font:{size:9,weight:'bold'},formatter:v=>v>0?v+'%':''}},
+    {label:"Booking CVR (BD/Leads)",  data:l2b,borderColor:"#06B6D4",backgroundColor:"rgba(6,182,212,.08)",fill:true,tension:.35,pointRadius:3,borderWidth:2,datalabels:{align:'top',color:"#0891B2",font:{size:9,weight:'bold'},formatter:v=>v>0?Math.round(v)+'%':''}},
+    {label:"Show-up CVR (SU/Book TD)",data:b2s,borderColor:"#10B981",backgroundColor:"rgba(16,185,129,.08)",fill:true,tension:.35,pointRadius:3,borderWidth:2,datalabels:{align:'top',color:"#059669",font:{size:9,weight:'bold'},formatter:v=>v>0?Math.round(v)+'%':''}},
+    {label:"Paid NS CVR (NS/SU)",     data:s2n,borderColor:"#F59E0B",backgroundColor:"rgba(245,158,11,.08)",fill:true,tension:.35,pointRadius:3,borderWidth:2,datalabels:{align:'top',color:"#D97706",font:{size:9,weight:'bold'},formatter:v=>v>0?Math.round(v)+'%':''}},
   ]},options:{
     responsive:true,maintainAspectRatio:false,
     interaction:{mode:"index",intersect:false},
@@ -1157,7 +1119,6 @@ function renderCostChart(){
       tooltip:{callbacks:{label:ctx=>`${ctx.dataset.label}: ${ctx.parsed.y!=null?fmtRevShort(ctx.parsed.y):"–"}`}}
     },
     scales:{
-      // CPL & CPB share left axis — they're in the same magnitude range
       y:{
         type:'linear',position:'left',
         grid:{color:"#F1F5F9"},
@@ -1165,7 +1126,6 @@ function renderCostChart(){
         title:{display:true,text:"CPL / CPB",font:{size:11},color:"#94A3B8"},
         beginAtZero:true,
       },
-      // CAC on right axis — typically 10-30x higher than CPL
       y1:{
         type:'linear',position:'right',
         grid:{display:false},
@@ -1178,10 +1138,8 @@ function renderCostChart(){
   }});
 }
 
-// ── Ads Spend Area Chart — Meta, Google, TikTok + Total ──────────────────────
 function renderAdsSpendArea(){
   const allSeries=getTimeSeries();
-  // Only include periods with any spend at all
   const series=allSeries.filter(s=>s.adSpend>0);
   const canvasEl=$("chart-ads-spend");
   if(!series.length){
@@ -1190,7 +1148,6 @@ function renderAdsSpendArea(){
     return;
   }
   const labels=series.map(s=>getLabel(s));
-  // Show value labels only when ≤12 points
   const showLbl=series.length<=12;
   const dlCfg=(color)=>({
     display:showLbl,anchor:'end',align:'top',offset:2,
@@ -1255,7 +1212,6 @@ function byChannelUnitEconomics(){
 function renderUnitEconomics(){
   const data=byChannelUnitEconomics();
   if(!data.length){if(STATE.charts["chart-unit-economics"])STATE.charts["chart-unit-economics"].destroy();return;}
-  // Sort by ARPU desc for ranked view
   data.sort((a,b)=>b.arpu-a.arpu);
   const labels=data.map(d=>d.ch);
   const chColors=data.map(d=>palette[d.ch]||"#94A3B8");
@@ -1303,7 +1259,7 @@ function renderUnitEconomics(){
             const d=data[ctx[0].dataIndex];
             const margin=d.arpu-d.cac;
             const ratio=d.cac>0?(d.arpu/d.cac):null;
-            const flag=ratio===null?"–":ratio>=3?"🟢 Excellent":ratio>=2?"🟡 Acceptable":ratio>=1?"🟠 Thin":"🔴 Negative";
+            const flag=ratio===null?"–":ratio>=3?"Excellent":ratio>=2?"Acceptable":ratio>=1?"Thin":"Negative";
             return[`Margin: ${fmtRevShort(margin)}  |  ARPU/CAC: ${ratio?ratio.toFixed(1)+"x":"–"}  ${flag}`];
           }
         }}
@@ -1340,7 +1296,7 @@ function renderROAS(){
     interaction:{mode:"index",intersect:false},
     plugins:{legend:{position:"bottom",labels:{boxWidth:10,font:{size:11}}},datalabels:{},customBreakeven:true,
       tooltip:{callbacks:{
-        label:ctx=>{if(ctx.dataset.label==="Ad Spend")return`Ad Spend: ${fmtRevShort(ctx.parsed.y)}`;const v=ctx.parsed.y;if(!v)return"ROAS: –";const flag=v>=3?"🟢 Strong":v>=2?"🟡 Good":v>=1?"🟠 Marginal":"🔴 Below breakeven";return`ROAS: ${v.toFixed(2)}x — ${flag}`;},
+        label:ctx=>{if(ctx.dataset.label==="Ad Spend")return`Ad Spend: ${fmtRevShort(ctx.parsed.y)}`;const v=ctx.parsed.y;if(!v)return"ROAS: –";const flag=v>=3?"Strong":v>=2?"Good":v>=1?"Marginal":"Below breakeven";return`ROAS: ${v.toFixed(2)}x — ${flag}`;},
         afterBody:ctx=>{if(!ctx.length)return[];const s=series[ctx[0].dataIndex];return[`Revenue: ${fmtRevShort(s.revenue)}`];}
       }}
     },
@@ -1357,7 +1313,6 @@ function renderQuadrant(){
   const channels=CONFIG.CHANNELS.filter(ch=>chData[ch].leads>0);
   if(!channels.length)return;
   const cplArr=channels.map(ch=>chData[ch].leads>0?chData[ch].adSpend/chData[ch].leads:0);
-  // Booking CVR = BD/Leads
   const cvrArr=channels.map(ch=>chData[ch].leads>0?chData[ch].bookingBD/chData[ch].leads*100:0);
   const nsArr=channels.map(ch=>chData[ch].ns);
   const maxNs=Math.max(...nsArr,1);
@@ -1383,14 +1338,13 @@ function renderQuadrant(){
   $("quad-legend").innerHTML=channels.map(ch=>{
     const cpl=cplArr[channels.indexOf(ch)];
     const cvr=cvrArr[channels.indexOf(ch)];
-    const q=(cpl<=medCplVal&&cvr>=medCvrVal)?"⭐ Star":(cpl>medCplVal&&cvr>=medCvrVal)?"💰 High CVR":(cpl<=medCplVal&&cvr<medCvrVal)?"🔧 Cheap Lead":"⚠️ Review";
+    const q=(cpl<=medCplVal&&cvr>=medCvrVal)?"Star":(cpl>medCplVal&&cvr>=medCvrVal)?"High CVR":(cpl<=medCplVal&&cvr<medCvrVal)?"Cheap Lead":"Review";
     return`<div class="flex items-center gap-1.5 text-xs"><span style="width:10px;height:10px;border-radius:50%;background:${palette[ch]};display:inline-block"></span><span class="font-semibold">${ch}</span><span class="text-slate-400">${q}</span></div>`;
   }).join("");
 }
 
 function renderDonut(){
   const rawData=byChannelNewStudents();
-  // Only show channels with actual NS — filter zeroes
   const entries=Object.entries(rawData).filter(([,v])=>v>0);
   if(!entries.length){
     if(STATE.charts["chart-donut"])STATE.charts["chart-donut"].destroy();
@@ -1432,7 +1386,6 @@ function renderDonut(){
 
 function renderCenterPerf(){
   const grid=byCenterByChannel();
-  // Sort centers by total NS descending
   const centers=CONFIG.CENTERS
     .filter(c=>Object.values(grid[c]).some(v=>v.ns>0||v.leads>0))
     .sort((a,b)=>{
@@ -1440,7 +1393,6 @@ function renderCenterPerf(){
       const nsB=Object.values(grid[b]).reduce((s,v)=>s+v.ns,0);
       return nsB-nsA;
     });
-  // Compute totals for each center (for end-of-bar label)
   const totals=centers.map(c=>Object.values(grid[c]).reduce((s,v)=>s+v.ns,0));
 
   const datasets=CONFIG.CHANNELS.map((ch,chIdx)=>{
@@ -1450,12 +1402,10 @@ function renderCenterPerf(){
       backgroundColor:palette[ch]||"#94A3B8",
       data:centers.map(c=>grid[c][ch].ns),
       stack:"a",
-      // Show segment label only for non-zero values
       datalabels:{
         color:'#ffffff',
         font:{size:8,weight:'bold'},
         formatter:v=>Math.round(v)>=5?Math.round(v):'',
-        // On the last channel segment, also show the total after the bar
         ...(isLast ? {
           anchor:'end', align:'right', offset:4,
           color:'#334155', font:{size:10,weight:'700'},
@@ -1475,7 +1425,7 @@ function renderCenterPerf(){
       indexAxis:"y",
       responsive:true,
       maintainAspectRatio:false,
-      layout:{padding:{right:48}}, // room for total labels
+      layout:{padding:{right:48}},
       plugins:{
         legend:{position:"bottom",labels:{boxWidth:10,font:{size:10}}},
         datalabels:{},
@@ -1483,7 +1433,6 @@ function renderCenterPerf(){
           title:ctx=>ctx[0].label,
           label:ctx=>`${ctx.dataset.label}: ${Math.round(ctx.parsed.x).toLocaleString()}`,
           afterBody:ctx=>{
-            const c=centers[ctx[0].dataIndex];
             const total=totals[ctx[0].dataIndex];
             return[`Total NS: ${total.toLocaleString()}`];
           }
@@ -1496,7 +1445,6 @@ function renderCenterPerf(){
     }
   });
 }
-
 
 function renderHeatmap(){
   const grid=byCenterByChannel();
@@ -1567,16 +1515,57 @@ function renderRevByCenter(){
   const revGrid={};
   for(const c of CONFIG.CENTERS)revGrid[c]=Object.fromEntries(CONFIG.CHANNELS.map(ch=>[ch,0]));
   for(const r of STATE.rows){if(!r.center||!revGrid[r.center]||!inFilter(r))continue;revGrid[r.center][r.channel]+=r.revenue;}
-  // Sort by total revenue descending
-  const centers=CONFIG.CENTERS
-    .filter(c=>Object.values(revGrid[c]).some(v=>v>0))
+  
+  const centers=CONFIG.CENTERS.filter(c=>Object.values(revGrid[c]).some(v=>v>0))
     .sort((a,b)=>{
       const rA=Object.values(revGrid[a]).reduce((s,v)=>s+v,0);
       const rB=Object.values(revGrid[b]).reduce((s,v)=>s+v,0);
       return rB-rA;
     });
-  const datasets=CONFIG.CHANNELS.map(ch=>({label:ch,backgroundColor:palette[ch]||"#94A3B8",stack:"a",data:centers.map(c=>revGrid[c][ch]),datalabels:{color:"#fff",font:{size:9,weight:"bold"},formatter:v=>v>0?fmtRevShort(v):""}}));
-  chart("chart-rev-center",{type:"bar",data:{labels:centers,datasets},options:{indexAxis:"y",responsive:true,maintainAspectRatio:false,plugins:{legend:{position:"bottom",labels:{boxWidth:10,font:{size:10}}},datalabels:{}},scales:{x:{stacked:true,grid:{color:"#F1F5F9"},ticks:{callback:v=>fmtRevShort(v),font:{size:10}}},y:{stacked:true,grid:{display:false},ticks:{font:{size:10}}}}}});
+    
+  const totals = centers.map(c => Object.values(revGrid[c]).reduce((s, v) => s + v, 0));
+
+  const datasets=CONFIG.CHANNELS.map((ch, chIdx)=>{
+    const isLast = chIdx === CONFIG.CHANNELS.length - 1;
+    return {
+      label:ch,
+      backgroundColor:palette[ch]||"#94A3B8",
+      stack:"a",
+      data:centers.map(c=>revGrid[c][ch]),
+      datalabels:{
+        color:"#fff",
+        font:{size:9,weight:"bold"},
+        formatter:(v, ctx)=>{
+          const total = totals[ctx.dataIndex];
+          return (v > 0 && v >= total * 0.08) ? fmtRevShort(v) : "";
+        },
+        ...(isLast ? {
+          anchor: 'end', align: 'right', offset: 4,
+          color: '#334155', font: { size: 10, weight: '700' },
+          formatter: (_, ctx) => {
+            const total = totals[ctx.dataIndex];
+            return total > 0 ? fmtRevShort(total) : ''; 
+          }
+        } : {})
+      }
+    };
+  });
+  
+  chart("chart-rev-center",{
+    type:"bar",
+    data:{labels:centers,datasets},
+    options:{
+      indexAxis:"y",
+      responsive:true,
+      maintainAspectRatio:false,
+      layout: { padding: { right: 48 } },
+      plugins:{legend:{position:"bottom",labels:{boxWidth:10,font:{size:10}}},datalabels:{}},
+      scales:{
+        x:{stacked:true,grid:{color:"#F1F5F9"},ticks:{callback:v=>fmtRevShort(v),font:{size:10}},border:{display:false}},
+        y:{stacked:true,grid:{display:false},ticks:{font:{size:10,weight:"600"}},border:{display:false}}
+      }
+    }
+  });
 }
 
 function renderRevByChannel(){
@@ -1650,13 +1639,11 @@ function renderAovNs(){
       if(hit){
         const{c,i}=hit;const col=canvasEl._aovColorList[i%canvasEl._aovColorList.length];
         const{ns,revenue}=canvasEl._aovCData[c];const arpu=Math.round(revenue/ns);
-        // Draw highlight ring — coordinates are in CSS pixels (same space as _aovToX/Y)
-        // DPR scaling is already baked into draw(); we must NOT call scale() again here.
         const dpr=window.devicePixelRatio||1;
         const ctx2=canvasEl.getContext("2d");
         const x=canvasEl._aovToX(ns),y=canvasEl._aovToY(revenue/ns),r=canvasEl._aovRadius(c);
         ctx2.save();
-        ctx2.setTransform(dpr,0,0,dpr,0,0); // set DPR transform directly, no extra scale
+        ctx2.setTransform(dpr,0,0,dpr,0,0);
         ctx2.beginPath();ctx2.arc(x,y,r+5,0,Math.PI*2);
         ctx2.strokeStyle=col;ctx2.lineWidth=3;ctx2.stroke();
         ctx2.restore();
